@@ -1,43 +1,53 @@
 import React from 'react';
+import axios from "axios";
+
 import { Trash2, Plus, Building2, MapPin, BookOpen, Award, DollarSign, Home, GraduationCap } from 'lucide-react';
 
 export default function AdminPanel({ colleges = [], setColleges = () => {}, collegeForm = {}, setCollegeForm = () => {} }) {
   // Add a new college
-  const addCollege = () => {
-    const newCollege = {
-      id: Date.now(),
-      name: collegeForm.name || '',
-      location: collegeForm.location || '',
-      courses: collegeForm.courses || '',
-      cutoff_rank: parseInt(collegeForm.cutoff_rank) || 0,
-      fee: parseInt(collegeForm.fee) || 0,
-      placement_rate: parseFloat(collegeForm.placement_rate) || 0,
-      hostel_available: collegeForm.hostel_available || false,
-      teaching_style: collegeForm.teaching_style || '',
-      college_type: collegeForm.college_type || '',
-      campus_type: collegeForm.campus_type || ''
-    };
-    setColleges([...colleges, newCollege]);
+  // Add a new college (Connect to backend API)
+const addCollege = async () => {
+  try {
+    const response = await axios.post("http://localhost:8080/api/colleges", collegeForm);
+
+    // Update UI with backend response
+    setColleges([...colleges, response.data]);
 
     // Reset form
     setCollegeForm({
-      name: '',
-      location: '',
-      courses: '',
-      cutoff_rank: '',
-      fee: '',
-      placement_rate: '',
+      name: "",
+      location: "",
+      courses: "",
+      cutoff_rank: "",
+      fee: "",
+      placement_rate: "",
       hostel_available: false,
-      teaching_style: '',
-      college_type: '',
-      campus_type: ''
+      teaching_style: "",
+      college_type: "",
+      campus_type: ""
     });
-  };
+
+    alert("College added successfully!");
+  } catch (error) {
+    console.error("Error adding college:", error);
+    alert("Failed to add college.");
+  }
+};
+
 
   // Delete a college
-  const deleteCollege = (id) => {
-    setColleges(colleges.filter(c => c.id !== id));
-  };
+  const deleteCollege = async (id) => {
+  const token = localStorage.getItem("adminToken");
+
+  await axios.delete(`http://localhost:8080/api/colleges/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  setColleges(colleges.filter(col => col.id !== id));
+};
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 py-20 px-4">

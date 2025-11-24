@@ -88,23 +88,74 @@ export default function App() {
   ];*/
 
   // Auth Handlers
-  const handleLogin = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setToken("mock-token");
-      setUser({ name: form.name, email: form.email });
-      setLoading(false);
-    }, 1000);
-  };
+  const handleLogin = async () => {
+  setLoading(true);
 
-  const handleSignup = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setToken("mock-token");
-      setUser({ name: form.name, email: form.email });
+  try {
+    const response = await fetch("http://localhost:8080/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: form.email,
+        password: form.password
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      alert(data.error || "Login failed");
       setLoading(false);
-    }, 1000);
-  };
+      return;
+    }
+
+    // Save token & user data
+    setToken(data.token);
+    setUser({ email: form.email }); // Add more fields if backend returns
+
+  } catch (err) {
+    console.error(err);
+    alert("Server error");
+  }
+
+  setLoading(false);
+};
+
+
+  const handleSignup = async () => {
+  setLoading(true);
+
+  try {
+    const response = await fetch("http://localhost:8080/api/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fullname: form.fullname,
+        email: form.email,
+        password: form.password
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      alert(data.error || "Signup failed");
+      setLoading(false);
+      return;
+    }
+
+    // Auto-login after signup
+    setToken("mock-token"); // Or use returned token if you add it in backend
+    setUser({ name: form.name, email: form.email });
+
+  } catch (err) {
+    console.error(err);
+    alert("Server error");
+  }
+
+  setLoading(false);
+};
+
 
   // Recommendation logic
 const handleRecommend = async () => {

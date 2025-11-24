@@ -15,6 +15,7 @@ app.use("/api/auth", authRoutes);
 const recommendationRoutes = require("./routes/recommendation");
 app.use("/api", recommendationRoutes);
 
+
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);

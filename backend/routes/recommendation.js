@@ -5,7 +5,7 @@ const router = express.Router();
 // Get all colleges
 router.get("/colleges", async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM colleges ORDER BY name");
+    const result = await pool.query("SELECT * FROM college ORDER BY name");
     res.json(result.rows);
   } catch (err) {
     console.error(err);
@@ -111,7 +111,26 @@ router.post("/recommendations", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+// Delete a college
+router.delete("/colleges/:id", async (req, res) => {
+  const { id } = req.params;
 
+  try {
+    const result = await pool.query(
+      "DELETE FROM college WHERE id = $1 RETURNING *",
+      [id]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "College not found" });
+    }
+
+    res.json({ message: "College deleted successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
 
 module.exports = router;
 
