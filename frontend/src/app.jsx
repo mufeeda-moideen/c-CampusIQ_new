@@ -3,6 +3,8 @@ import { BookOpen, Star, Building, Users } from "lucide-react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import jsPDF from "jspdf";
+
 
 
 // Components
@@ -218,6 +220,20 @@ useEffect(() => {
       />
     );
   }
+  //handle pdf
+  const handlePDF = () => {
+  const pdf = new jsPDF();
+
+  pdf.setFontSize(16);
+  pdf.text("College Recommendations", 10, 10);
+
+  pdf.setFontSize(12);
+  recommendations.forEach((rec, index) => {
+    pdf.text(`${index + 1}. ${rec.name} - ${rec.location}`, 10, 20 + index * 10);
+  });
+
+  pdf.save("recommendations.pdf");
+};
 
   // Main App
   return (
@@ -278,7 +294,9 @@ useEffect(() => {
             />
             <Route
               path="/recommendations"
-              element={<Recommendations recommendations={recommendations} user={user} />}
+              element={<Recommendations recommendations={recommendations}
+              handlePDF={handlePDF}   
+              user={user} />}
             />
             <Route
               path="/colleges"

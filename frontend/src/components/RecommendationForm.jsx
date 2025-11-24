@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function RecommendationForm({
   rankForm = {},
@@ -6,6 +7,12 @@ export default function RecommendationForm({
   handleRecommend = () => {},
   loading = false,
 }) {
+  const navigate = useNavigate();
+
+  const navigateToRecommendations = () => {
+    handleRecommend();  // Optional: call your logic first
+    navigate("/recommendations"); // Navigate to next page
+  };
 
   return (
     <section className="relative min-h-screen flex items-center justify-center px-6 py-20 bg-gradient-to-tr from-[#667eea] via-[#7c6fb5] to-[#764ba2] overflow-hidden">
@@ -174,7 +181,7 @@ export default function RecommendationForm({
 
           {/* Submit Button */}
           <button
-            onClick={handleRecommend}
+            onClick={navigateToRecommendations}
             disabled={loading}
             className="mt-10 w-full py-4 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-lg hover:from-indigo-700 hover:to-purple-700 active:scale-[0.98] transition-all duration-300 shadow-xl shadow-indigo-500/30 hover:shadow-2xl hover:shadow-indigo-500/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 relative overflow-hidden group"
           >
