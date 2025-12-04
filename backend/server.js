@@ -15,6 +15,11 @@ app.use("/api/auth", authRoutes);
 const recommendationRoutes = require("./routes/recommendation");
 app.use("/api", recommendationRoutes);
 
+const adminAuthRoutes = require("./routes/adminAuth");
+app.use("/api/admin", adminAuthRoutes);
+
+const quizRoutes = require("./routes/quizRoutes");
+app.use("/quiz", quizRoutes);
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {

@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { BookOpen, Star, Building, Users } from "lucide-react";
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { BookOpen, Star, Building, Users , LogOut, Menu, X , Brain } from "lucide-react";
+import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
 import jsPDF from "jspdf";
-
-
 
 // Components
 import AuthForm from "./components/AuthForm";
@@ -14,201 +11,219 @@ import Recommendations from "./components/Recommendations";
 import Colleges from "./components/Colleges";
 import AdminPanel from "./components/AdminPanel";
 import RecommendationForm from "./components/RecommendationForm";
+import QuizSession from "./components/QuizSession";
+import Chatbot from "./components/chatbot"; // add import
 
+
+
+// ------------------------------------
+// MAIN APP (Router Wrapper)
+// ------------------------------------
 export default function App() {
+  return (
+    <Router>
+      <MainApp />
+    </Router>
+  );
+}
+
+// ------------------------------------
+// REAL APPLICATION LOGIC HERE
+// ------------------------------------
+function MainApp() {
+  const navigate = useNavigate();
+
   const [token, setToken] = useState("");
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
-  
-
 
   // Forms
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
- const [rankForm, setRankForm] = useState({
-  examType: "",     // KEAM, NEET, JEE
-  rank: "",         // numeric rank
-  location: "",     // preferred location
-  course: "",       // course interest
-  budget: "",       // low, mid, high
-  careerGoal: "",   // placement, higher-studies, startup, abroad
-  campusType: "",   // urban, semi-urban, rural
-  collegeType: ""   // government, private, autonomous, deemed
-});
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+    role: "user"
+  });
 
- const [collegeForm, setCollegeForm] = useState({
-  name: "",
-  location: "",
-  courses: "",          // comma-separated courses
-  cutoff_rank: "",      // number
-  fee: "",              // number
-  hostel_available: false,  // boolean
-  teaching_style: "",   // e.g., Practical, Theory, Hybrid
-  placement_rate: "",   // number (percentage)
-  college_type: "",     // government, private, autonomous, deemed
-  campus_type: ""       // urban, semi-urban, rural
-});
+  const [rankForm, setRankForm] = useState({
+    examType: "",
+    rank: "",
+    location: "",
+    course: "",
+    budget: "",
+    careerGoal: "",
+    campusType: "",
+    collegeType: ""
+  });
 
+  const [collegeForm, setCollegeForm] = useState({
+    name: "",
+    location: "",
+    courses: "",
+    cutoff_rank: "",
+    fee: "",
+    hostel_available: false,
+    teaching_style: "",
+    placement_rate: "",
+    college_type: "",
+    campus_type: ""
+  });
 
-  // Data
   const [recommendations, setRecommendations] = useState([]);
   const [colleges, setColleges] = useState([]);
   const [filteredColleges, setFilteredColleges] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  //const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
-  // Mock Data
-  /*const mockColleges = [
-    {
-      id: 1,
-      name: "IIT Kerala",
-      location: "Palakkad",
-      course: "Computer Science",
-      cutoff_rank: 500,
-      fees: "₹2,00,000",
-      rating: 4.8,
-      placement_rate: "95%"
-    },
-    {
-      id: 2,
-      name: "NIT Calicut",
-      location: "Kozhikode",
-      course: "Electronics",
-      cutoff_rank: 1200,
-      fees: "₹1,50,000",
-      rating: 4.6,
-      placement_rate: "90%"
-    },
-    {
-      id: 3,
-      name: "CUSAT",
-      location: "Kochi",
-      course: "Information Technology",
-      cutoff_rank: 2000,
-      fees: "₹80,000",
-      rating: 4.3,
-      placement_rate: "85%"
-    }
-  ];*/
 
-  // Auth Handlers
+
+  // ------------------------------------
+  // LOGIN
+  // ------------------------------------
   const handleLogin = async () => {
-  setLoading(true);
+    setLoading(true);
+    try {
+      const url =
+        form.role === "admin"
+          ? "http://localhost:8080/api/admin/login"
+          : "http://localhost:8080/api/auth/login";
 
-  try {
-    const response = await fetch("http://localhost:8080/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: form.email,
-        password: form.password
-      })
-    });
+      const body =
+        form.role === "admin"
+          ? { email: form.email, password: form.password }
+          : { email: form.email, password: form.password };
 
-    const data = await response.json();
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
 
-    if (!response.ok) {
-      alert(data.error || "Login failed");
-      setLoading(false);
-      return;
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.error || "Login failed");
+        setLoading(false);
+        return;
+      }
+
+      setToken(data.token);
+      setUser({ role: form.role });
+
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("role", form.role);
+
+      if (form.role === "admin") navigate("/admin");
+      else navigate("/dashboard");
+
+    } catch (err) {
+      console.error(err);
+      alert("Server error");
     }
-
-    // Save token & user data
-    setToken(data.token);
-    setUser({ email: form.email }); // Add more fields if backend returns
-
-  } catch (err) {
-    console.error(err);
-    alert("Server error");
-  }
-
-  setLoading(false);
-};
-
-
-  const handleSignup = async () => {
-  setLoading(true);
-
-  try {
-    const response = await fetch("http://localhost:8080/api/auth/signup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        fullname: form.fullname,
-        email: form.email,
-        password: form.password
-      })
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      alert(data.error || "Signup failed");
-      setLoading(false);
-      return;
-    }
-
-    // Auto-login after signup
-    setToken("mock-token"); // Or use returned token if you add it in backend
-    setUser({ name: form.name, email: form.email });
-
-  } catch (err) {
-    console.error(err);
-    alert("Server error");
-  }
-
-  setLoading(false);
-};
-
-
-  // Recommendation logic
-const handleRecommend = async () => {
-  setLoading(true);
-  try {
-    const response = await axios.post(
-      "http://localhost:8080/api/recommendations",
-      rankForm
-    );
-    // Set recommendations from backend
-    setRecommendations(response.data);
-  } catch (error) {
-    console.error("Failed to fetch recommendations:", error);
-    alert("Failed to get recommendations. Try again.");
-  } finally {
     setLoading(false);
-  }
-};
+  };
 
-  // Search
+  // ------------------------------------
+  // SIGNUP
+  // ------------------------------------
+  const handleSignup = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch("http://localhost:8080/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullname: form.name,
+          email: form.email,
+          password: form.password
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.error || "Signup failed");
+        setLoading(false);
+        return;
+      }
+
+      setToken("mock-token");
+      setUser({ name: form.name, email: form.email });
+
+      navigate("/dashboard");
+    } catch (err) {
+      console.error(err);
+      alert("Server error");
+    }
+    setLoading(false);
+  };
+
+  // ------------------------------------
+  // FETCH RECOMMENDATIONS
+  // ------------------------------------
+  const handleRecommend = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.post(
+        "http://localhost:8080/api/recommendations",
+        rankForm
+      );
+      setRecommendations(response.data);
+    } catch {
+      alert("Failed to get recommendations.");
+    }
+    setLoading(false);
+  };
+
+  // ------------------------------------
+  // SEARCH
+  // ------------------------------------
   const handleSearch = (term) => {
     setSearchTerm(term);
-    if (!term) setFilteredColleges(colleges);
-    else {
-      const filtered = colleges.filter(
-        (c) =>
-          c.name.toLowerCase().includes(term.toLowerCase()) ||
-          c.location.toLowerCase().includes(term.toLowerCase()) ||
-          c.course.toLowerCase().includes(term.toLowerCase())
-      );
-      setFilteredColleges(filtered);
-    }
+    if (!term) return setFilteredColleges(colleges);
+
+    const filtered = colleges.filter((c) =>
+      (c.name + c.location + c.courses).toLowerCase().includes(term.toLowerCase())
+    );
+
+    setFilteredColleges(filtered);
   };
 
-  // Load colleges from backend
-useEffect(() => {
-  const fetchColleges = async () => {
-    try {
-      const response = await axios.get("http://localhost:8080/api/colleges");
-      setColleges(response.data);
-      setFilteredColleges(response.data);
-    } catch (error) {
-      console.error("Failed to fetch colleges:", error);
-      alert("Could not load colleges. Try again later.");
-    }
+  // ------------------------------------
+  // FETCH COLLEGES
+  // ------------------------------------
+  useEffect(() => {
+    const fetchColleges = async () => {
+      try {
+        const response = await axios.get("http://localhost:8080/api/colleges");
+        setColleges(response.data);
+        setFilteredColleges(response.data);
+      } catch (err) {
+        console.error("Failed to fetch colleges:", err);
+      }
+    };
+    fetchColleges();
+  }, []);
+
+  // ------------------------------------
+  // PDF Download
+  // ------------------------------------
+  const handlePDF = () => {
+    const pdf = new jsPDF();
+    pdf.setFontSize(16);
+    pdf.text("College Recommendations", 10, 10);
+
+    recommendations.forEach((rec, index) => {
+      pdf.text(`${index + 1}. ${rec.name} - ${rec.location}`, 10, 20 + index * 10);
+    });
+
+    pdf.save("recommendations.pdf");
   };
 
-  fetchColleges();
-}, []);
-
-  // Auth screen
+  // ------------------------------------
+  // LOGIN SCREEN
+  // ------------------------------------
   if (!token) {
     return (
       <AuthForm
@@ -220,128 +235,177 @@ useEffect(() => {
       />
     );
   }
-  //handle pdf
-  const handlePDF = () => {
-  const pdf = new jsPDF();
 
-  pdf.setFontSize(16);
-  pdf.text("College Recommendations", 10, 10);
-
-  pdf.setFontSize(12);
-  recommendations.forEach((rec, index) => {
-    pdf.text(`${index + 1}. ${rec.name} - ${rec.location}`, 10, 20 + index * 10);
-  });
-
-  pdf.save("recommendations.pdf");
+ const handleLogout = () => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("role");
+  setToken("");
+  setUser(null);
+  navigate("/");
 };
 
-  // Main App
+
+
+  // ------------------------------------
+  // MAIN APP UI
+  // ------------------------------------
   return (
-    <Router>
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        {/* Header */}
-        <div className="fixed top-0 w-full bg-white/95 backdrop-blur-md px-[5%] py-6 flex items-center justify-between z-[1000] shadow-[0_2px_20px_rgba(0,0,0,0.1)]">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="fixed top-0 w-full bg-white/95 backdrop-blur-md px-[5%] py-6 flex items-center justify-between z-[1000] shadow">
+
   {/* Logo */}
   <h1 className="text-[1.5rem] font-bold bg-gradient-to-tr from-[#667eea] to-[#764ba2] bg-clip-text text-transparent">
     CampusIQ
   </h1>
 
-  {/* Nav Links */}
-  <nav className="flex gap-8">
+  {/* Hamburger (visible on both desktop & mobile) */}
+  <button
+    className="flex items-center justify-center p-2 border rounded-lg hover:bg-gray-100"
+    onClick={() => setMenuOpen(!menuOpen)}
+  >
+    {menuOpen ? <X size={26} /> : <Menu size={26} />}
+  </button>
+
+</div>
+{menuOpen && (
+  <div className="bg-white border-t shadow-xl px-6 py-5 space-y-6 absolute top-[90px] right-0 w-full md:w-80 z-[999]">
+
     <Link
-      to="/"
-      className="flex items-center text-gray-600 hover:text-indigo-500 font-medium transition-colors"
+      to="/dashboard"
+      onClick={() => setMenuOpen(false)}
+      className="flex items-center gap-3 text-gray-700 text-lg hover:text-indigo-600"
     >
-      <BookOpen className="w-4 h-4 mr-2" /> Dashboard
+      <BookOpen /> Dashboard
     </Link>
+
     <Link
       to="/recommendations"
-      className="flex items-center text-gray-600 hover:text-indigo-500 font-medium transition-colors"
+      onClick={() => setMenuOpen(false)}
+      className="flex items-center gap-3 text-gray-700 text-lg hover:text-indigo-600"
     >
-      <Star className="w-4 h-4 mr-2" /> Recommendations
+      <Star /> Recommendations
     </Link>
+
     <Link
       to="/colleges"
-      className="flex items-center text-gray-600 hover:text-indigo-500 font-medium transition-colors"
+      onClick={() => setMenuOpen(false)}
+      className="flex items-center gap-3 text-gray-700 text-lg hover:text-indigo-600"
     >
-      <Building className="w-4 h-4 mr-2" /> Colleges
+      <Building /> Colleges
     </Link>
     <Link
-      to="/admin"
-      className="flex items-center text-gray-600 hover:text-indigo-500 font-medium transition-colors"
+      to="/quiz"
+      onClick={() => setMenuOpen(false)}
+      className="flex items-center gap-3 text-gray-700 text-lg hover:text-indigo-600"
     >
-      <Users className="w-4 h-4 mr-2" /> Admin
+      <Star /> Career Quiz
     </Link>
-  </nav>
-</div>
+    <Link
+      to="/chatbot"
+      onClick={() => setMenuOpen(false)}
+      className="flex items-center gap-3 text-gray-700 text-lg hover:text-indigo-600"
+    >
+      <Brain /> AI Assistant
+    </Link>
 
 
-        {/* Routes */}
-        <div className="flex-1 p-6">
-          <Routes>
-            <Route
-              path="/"
-              element={
-                <Dashboard
-                  colleges={colleges}
-                  recommendations={recommendations}
-                  rankForm={rankForm}
-                  setRankForm={setRankForm}
-                  handleRecommend={handleRecommend}
-                  loading={loading}
-                />
-              }
-            />
-            <Route
-              path="/recommendations"
-              element={<Recommendations recommendations={recommendations}
-              handlePDF={handlePDF}   
-              user={user} />}
-            />
-            <Route
-              path="/colleges"
-              element={
-                <Colleges
-                  colleges={filteredColleges}
-                  searchTerm={searchTerm}
-                  handleSearch={handleSearch}
-                />
-              }
-            />
-            <Route
-              path="/admin"
-              element={
+
+    <Link
+      to="/admin"
+      onClick={() => setMenuOpen(false)}
+      className="flex items-center gap-3 text-gray-700 text-lg hover:text-indigo-600"
+    >
+      <Users /> Admin
+    </Link>
+
+    {/* Logout at Bottom */}
+    <button
+      onClick={() => {
+        setMenuOpen(false);
+        handleLogout();
+      }}
+      className="w-full flex items-center gap-3 text-red-600 text-lg font-semibold pt-3 border-t"
+    >
+      <LogOut /> Logout
+    </button>
+
+  </div>
+)}
+
+
+      {/* ROUTES */}
+      <div className="flex-1 p-6 mt-20">
+        <Routes>
+          <Route
+            path="/dashboard"
+            element={
+              <Dashboard
+                colleges={colleges}
+                recommendations={recommendations}
+                rankForm={rankForm}
+                setRankForm={setRankForm}
+                handleRecommend={handleRecommend}
+                loading={loading}
+              />
+            }
+          />
+
+          <Route
+            path="/recommendations"
+            element={
+              <Recommendations
+                recommendations={recommendations}
+                handlePDF={handlePDF}
+                user={user}
+              />
+            }
+          />
+
+          <Route
+            path="/colleges"
+            element={
+              <Colleges
+                colleges={filteredColleges}
+                searchTerm={searchTerm}
+                handleSearch={handleSearch}
+              />
+            }
+          />
+
+          <Route path="/quiz" element={<QuizSession />} />
+          <Route path="/chatbot" element={<Chatbot />} />
+
+          <Route
+            path="/admin"
+            element={
+              user?.role === "admin" ? (
                 <AdminPanel
                   colleges={colleges}
                   setColleges={setColleges}
-                  filteredColleges={filteredColleges}
-                  setFilteredColleges={setFilteredColleges}
                   collegeForm={collegeForm}
                   setCollegeForm={setCollegeForm}
                 />
-              }
-            />
-            <Route
-              path="/recommendation"
-              element={
-                <RecommendationForm
-                  rankForm={rankForm}
-                  setRankForm={setRankForm}
-                  handleRecommend={handleRecommend}
-                  loading={loading}
-                />
-              }
-            />
-          </Routes>
-        </div>
+              ) : (
+                <h2 className="text-center text-red-600 mt-20">
+                  Unauthorized: Admin Only
+                </h2>
+              )
+            }
+          />
 
-        {/* Footer */}
-        {/*<footer className="bg-[#111827] text-white py-4 text-center">
-          <p className="text-sm">
-            © {new Date().getFullYear()} CampusIQ. All rights reserved.
-          </p>
-        </footer>*/}
+          <Route
+            path="/recommendation"
+            element={
+              <RecommendationForm
+                rankForm={rankForm}
+                setRankForm={setRankForm}
+                handleRecommend={handleRecommend}
+                loading={loading}
+              />
+            }
+          />
+        </Routes>
       </div>
-    </Router>
+    </div>
   );
 }

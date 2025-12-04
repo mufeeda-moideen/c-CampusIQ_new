@@ -1,6 +1,7 @@
 const express = require("express");
 const pool = require("../db");
 const router = express.Router();
+const adminAuth = require("../middleware/adminAuth");
 
 // Get all colleges
 router.get("/colleges", async (req, res) => {
@@ -13,7 +14,7 @@ router.get("/colleges", async (req, res) => {
   }
 });
 
-router.post("/colleges", async (req, res) => {
+router.post("/colleges",adminAuth, async (req, res) => {
   const {
     name,
     location,
@@ -112,7 +113,7 @@ router.post("/recommendations", async (req, res) => {
   }
 });
 // Delete a college
-router.delete("/colleges/:id", async (req, res) => {
+router.delete("/colleges/:id",adminAuth, async (req, res) => {
   const { id } = req.params;
 
   try {

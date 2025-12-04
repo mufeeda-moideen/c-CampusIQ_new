@@ -8,12 +8,22 @@ export default function AdminPanel({ colleges = [], setColleges = () => {}, coll
   // Add a new college (Connect to backend API)
 const addCollege = async () => {
   try {
-    const response = await axios.post("http://localhost:8080/api/colleges", collegeForm);
+    const token = localStorage.getItem("token");
 
-    // Update UI with backend response
+    
+
+    const response = await axios.post(
+      "http://localhost:8080/api/colleges",
+     collegeForm,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
     setColleges([...colleges, response.data]);
 
-    // Reset form
     setCollegeForm({
       name: "",
       location: "",
@@ -35,9 +45,10 @@ const addCollege = async () => {
 };
 
 
+
   // Delete a college
   const deleteCollege = async (id) => {
-  const token = localStorage.getItem("adminToken");
+  const token = localStorage.getItem("token");
 
   await axios.delete(`http://localhost:8080/api/colleges/${id}`, {
     headers: {

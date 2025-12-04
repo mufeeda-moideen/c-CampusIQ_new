@@ -115,6 +115,15 @@ export default function AuthForm({ form = {}, setForm = () => {}, handleLogin = 
                 </a>
               </div>
             )}
+            <select
+            value={form.role || "user"}
+            onChange={(e) => setForm({ ...form, role: e.target.value })}
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl"
+            >
+            <option value="user">User</option>
+            <option value="admin">Admin</option>
+            </select>
+
 
             {/* Submit Button */}
             <button
