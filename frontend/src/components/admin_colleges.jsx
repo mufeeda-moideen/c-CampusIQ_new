@@ -61,15 +61,7 @@ const addCollege = async () => {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 py-20 px-4">
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-            Admin Dashboard
-          </h1>
-          <p className="text-gray-600 text-lg">Manage your college database</p>
-        </div>
+        <div className="w-full space-y-8">
 
         {/* Add College Form */}
         <div className="backdrop-blur-xl bg-white/90 p-8 rounded-3xl shadow-2xl border border-white/20">
@@ -326,7 +318,6 @@ const addCollege = async () => {
             )}
           </div>
         </div>
-      </div>
     </div>
   );
 }

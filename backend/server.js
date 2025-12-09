@@ -21,6 +21,21 @@ app.use("/api/admin", adminAuthRoutes);
 const quizRoutes = require("./routes/quizRoutes");
 app.use("/quiz", quizRoutes);
 
+const sessionRoutes = require("./routes/sessionRoutes");
+const counselorRoutes = require("./routes/counselorRoutes");
+const bookingRoutes = require("./routes/bookingRoutes");
+const resourceRoutes = require("./routes/resourceRoutes");
+
+app.use("/api/sessions", sessionRoutes);
+app.use("/api/counselors", counselorRoutes);
+app.use("/api/bookings", bookingRoutes);
+app.use("/api/resources", resourceRoutes);
+
+const userCareerRoutes = require("./routes/userCareerRoutes");
+app.use("/api/user-career", userCareerRoutes);
+
+
+
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);

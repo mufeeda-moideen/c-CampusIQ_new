@@ -5,8 +5,15 @@ export default function AuthForm({ form = {}, setForm = () => {}, handleLogin = 
   const [isSignup, setIsSignup] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gradient-to-tr from-[#667eea] via-[#7c6fb5] to-[#764ba2] flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Animated Background Elements */}
+    <div
+      className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-cover bg-center bg-no-repeat"
+      style={{
+        backgroundImage: "url('/demo3.jpg')",
+      }}
+    >
+      <div className="absolute inset-0 bg-black/40"></div>
+
+
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-white/5 rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-300/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
@@ -14,7 +21,8 @@ export default function AuthForm({ form = {}, setForm = () => {}, handleLogin = 
 
       <div className="w-full max-w-md relative">
         {/* Glassmorphism Card */}
-        <div className="backdrop-blur-xl bg-white/95 p-10 rounded-3xl shadow-2xl border border-white/20 transform hover:scale-[1.01] transition-transform duration-300">
+        <div className="backdrop-blur-2xl bg-[#0f172a]/40 p-10 rounded-3xl shadow-2xl border border-white/30 transform hover:scale-[1.01] transition-transform duration-300">
+
           {/* Logo & Header */}
           <div className="text-center mb-10">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl mb-4 shadow-lg">
@@ -147,7 +155,7 @@ export default function AuthForm({ form = {}, setForm = () => {}, handleLogin = 
                   </>
                 )}
               </span>
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </button>
           </div>
 
