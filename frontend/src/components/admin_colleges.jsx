@@ -10,11 +10,18 @@ const addCollege = async () => {
   try {
     const token = localStorage.getItem("token");
 
-    
+    // Convert string inputs to numbers and keep boolean/string fields
+    const payload = {
+      ...collegeForm,
+      cutoff_rank: Number(collegeForm.cutoff_rank) || 0,
+      fee: Number(collegeForm.fee) || 0,
+      placement_rate: Number(collegeForm.placement_rate) || 0,
+      hostel_available: Boolean(collegeForm.hostel_available),
+    };
 
     const response = await axios.post(
       "http://localhost:8080/api/colleges",
-     collegeForm,
+      payload,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -22,8 +29,10 @@ const addCollege = async () => {
       }
     );
 
+    // Update state with new college
     setColleges([...colleges, response.data]);
 
+    // Reset form
     setCollegeForm({
       name: "",
       location: "",

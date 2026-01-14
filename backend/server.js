@@ -34,6 +34,14 @@ app.use("/api/resources", resourceRoutes);
 const userCareerRoutes = require("./routes/userCareerRoutes");
 app.use("/api/user-career", userCareerRoutes);
 
+const chatbotRoutes = require("./routes/chatbotRoute");
+app.use("/api/chat", chatbotRoutes);
+
+const collegeRoutes = require('./routes/collegeDetails');
+app.use('/api/colleges', collegeRoutes);
+
+const userRoutes = require("./routes/userRoutes");
+app.use("/api/user", userRoutes);
 
 
 const PORT = process.env.PORT || 8080;

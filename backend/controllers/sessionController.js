@@ -6,13 +6,13 @@ exports.getSessions = async (req, res) => {
 };
 
 exports.createSession = async (req, res) => {
-  const { title, counselor, specialty, topics, date, time, duration, status, participants, rating, thumbnail } = req.body;
+  const { title, counselor, specialty, topics, date, time, duration, status, participants, rating, thumbnail, googlemeetlink} = req.body;
 
   const result = await pool.query(
     `INSERT INTO career_sessions 
-    (title, counselor, specialty, topics, date, time, duration, status, participants, rating, thumbnail)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
-    [title, counselor, specialty, topics, date, time, duration, status, participants, rating, thumbnail]
+    (title, counselor, specialty, topics, date, time, duration, status, participants, rating, thumbnail, googlemeetlink)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+    [title, counselor, specialty, topics, date, time, duration, status, participants, rating, thumbnail, googlemeetlink]
   );
 
   res.json(result.rows[0]);
@@ -24,15 +24,39 @@ exports.updateSession = async (req, res) => {
 
   const result = await pool.query(
     `UPDATE career_sessions SET
-      title=$1,counselor=$2,specialty=$3,topics=$4,date=$5,
-      time=$6,duration=$7,status=$8,participants=$9,rating=$10,thumbnail=$11
-     WHERE id=$12 RETURNING *`,
-    [data.title, data.counselor, data.specialty, data.topics, data.date, data.time,
-     data.duration, data.status, data.participants, data.rating, data.thumbnail, id]
+      title=$1,
+      counselor=$2,
+      specialty=$3,
+      topics=$4,
+      date=$5,
+      time=$6,
+      duration=$7,
+      status=$8,
+      participants=$9,
+      rating=$10,
+      thumbnail=$11,
+      googlemeetlink=$12
+     WHERE id=$13 RETURNING *`,
+    [
+      data.title,
+      data.counselor,
+      data.specialty,
+      data.topics,
+      data.date,
+      data.time,
+      data.duration,
+      data.status,
+      data.participants,
+      data.rating,
+      data.thumbnail,
+      data.googlemeetlink,   // 🔥 FIXED
+      id
+    ]
   );
 
   res.json(result.rows[0]);
 };
+
 
 exports.deleteSession = async (req, res) => {
   await pool.query("DELETE FROM career_sessions WHERE id=$1", [req.params.id]);

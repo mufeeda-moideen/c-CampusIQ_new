@@ -14,6 +14,28 @@ export default function RecommendationForm({
     navigate("/recommendations"); // Navigate to next page
   };
 
+  // Fetch recommendations from backend
+const fetchRecommendations = async () => {
+  if (!rankForm.rank || !rankForm.examType) {
+    return alert("Please fill in all required fields.");
+  }
+
+  try {
+    const res = await axios.post(
+      "http://localhost:8080/api/recommendations",
+      rankForm,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    setRecommendations(res.data); // Update state
+  } catch (err) {
+    console.error(err);
+    alert("Failed to fetch recommendations. Try again.");
+  }
+};
+
+
   return (
     <section className="relative min-h-screen flex items-center justify-center px-6 py-20 bg-gradient-to-tr from-[#667eea] via-[#7c6fb5] to-[#764ba2] overflow-hidden">
       {/* Animated Background Elements */}
@@ -48,8 +70,8 @@ export default function RecommendationForm({
                 className="w-full px-5 py-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-white hover:border-indigo-300 appearance-none cursor-pointer"
               >
                 <option value="">Select Exam</option>
-                <option value="KEAM">KEAM</option>
-                <option value="NEET">NEET</option>
+                <option value="KEAM">LET </option>
+                <option value="NEET">KEAM</option>
                 <option value="JEE">JEE</option>
               </select>
             </div>
@@ -177,6 +199,34 @@ export default function RecommendationForm({
                 <option value="deemed">Deemed</option>
               </select>
             </div>
+            {/* User Location */}
+          <div className="group">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Your Location
+            </label>
+            <input
+              type="text"
+              placeholder="City / Town"
+              value={rankForm.userLocation || ''}
+              onChange={(e) => setRankForm({ ...rankForm, userLocation: e.target.value })}
+              className="w-full px-5 py-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-white hover:border-indigo-300 placeholder:text-gray-400"
+            />
+          </div>
+
+          {/* Preferred Distance */}
+          <div className="group">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Preferred Distance (km)
+            </label>
+            <input
+              type="number"
+              placeholder="e.g., 50"
+              value={rankForm.preferredDistance || ''}
+              onChange={(e) => setRankForm({ ...rankForm, preferredDistance: e.target.value })}
+              className="w-full px-5 py-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-white hover:border-indigo-300 placeholder:text-gray-400"
+            />
+          </div>
+
           </div>
 
           {/* Submit Button */}

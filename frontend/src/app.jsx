@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
 import axios from "axios";
 import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 // Layouts
 import UserLayout from "./components/layout/UserLayout";
@@ -20,6 +21,8 @@ import LiveCareerGuidance from "./components/LiveCareerGuidance";
 import UserProfile from "./components/UserProfile";
 import LiveSeatDashboard from "./components/LiveSeatDashboard";
 import AIRankPredictor from "./components/AIRankPredictor";
+import CollegeDetailsPage from "./components/CollegeDetailsPage";
+
 
 // Admin Pages
 import AdminColleges from "./components/admin_colleges";
@@ -56,6 +59,7 @@ function MainApp() {
   const [colleges, setColleges] = useState([]);
   const [filteredColleges, setFilteredColleges] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [compareList, setCompareList] = useState([]);
 
   // --- LOGIN ---
   const handleLogin = async () => {
@@ -122,14 +126,102 @@ function MainApp() {
   };
 
   // --- PDF ---
-  const handlePDF = () => {
-    const pdf = new jsPDF();
-    pdf.text("Recommendations", 10, 10);
-    recommendations.forEach((r, i) => {
-      pdf.text(`${i + 1}. ${r.name}`, 10, 20 + i * 10);
-    });
-    pdf.save("recommendations.pdf");
+const handlePDF = () => {
+  const pdf = new jsPDF();
+
+  // Format ₹ and %
+  const formatFee = (fee) => {
+    if (!fee) return "N/A";
+    return "₹" + Number(fee).toLocaleString("en-IN");
   };
+
+  const formatPlacement = (rate) => {
+    if (rate === undefined || rate === null) return "N/A";
+    return `${rate}%`;
+  };
+
+  // --- HEADER ---
+  pdf.setFontSize(22);
+  pdf.setTextColor(40, 40, 140);
+  pdf.text("College Recommendation Report", 14, 20);
+
+  pdf.setFontSize(12);
+  pdf.setTextColor(100);
+  pdf.text(`Generated for: ${user?.name || "User"}`, 14, 30);
+  pdf.text(`Date: ${new Date().toLocaleDateString()}`, 14, 36);
+
+  // --- SUMMARY BOX ---
+  pdf.setFillColor(240, 240, 255);
+  pdf.rect(10, 45, 190, 20, "F");
+
+  pdf.setTextColor(20, 20, 120);
+  pdf.setFontSize(14);
+  pdf.text("Candidate Performance Summary", 14, 58);
+
+  pdf.setTextColor(0);
+  pdf.setFontSize(12);
+  pdf.text(`• Rank: ${rankForm.rank || "N/A"}`, 14, 66);
+  pdf.text(`• Category: ${rankForm.category || "N/A"}`, 60, 66);
+  pdf.text(`• Exam: ${rankForm.exam || "N/A"}`, 120, 66);
+
+  // --- BEST MATCH ---
+  const best = recommendations[0];
+  if (best) {
+    pdf.setFillColor(220, 255, 220);
+    pdf.rect(10, 78, 190, 25, "F");
+
+    pdf.setTextColor(0, 100, 0);
+    pdf.setFontSize(14);
+    pdf.text("Best Matched College", 14, 90);
+
+    pdf.setFontSize(12);
+    pdf.setTextColor(0);
+    pdf.text(`• ${best.name}`, 14, 98);
+    pdf.text(`• Location: ${best.location}`, 80, 98);
+    pdf.text(`• Cutoff: ${best.cutoff_rank || "N/A"}`, 150, 98); // FIXED
+  }
+
+  // --- TABLE ---
+  pdf.setFontSize(14);
+  pdf.setTextColor(40, 40, 140);
+  pdf.text("All Recommendations", 14, 120);
+
+  autoTable(pdf, {
+    startY: 130,
+    head: [["#", "College Name", "Location", "Cutoff", "Fees", "Placement %"]],
+    body: recommendations.map((c, i) => [
+      i + 1,
+      c.name,
+      c.location,
+      c.cutoff_rank || "N/A",              // FIXED
+      formatFee(c.fee),                    // FIXED
+      formatPlacement(c.placement_rate),   // FIXED
+    ]),
+    headStyles: {
+      fillColor: [40, 40, 140],
+      textColor: [255, 255, 255],
+      halign: "center",
+    },
+    styles: {
+      fontSize: 11,
+    },
+  });
+
+  // --- FOOTER ---
+  pdf.setFontSize(10);
+  pdf.setTextColor(120);
+  pdf.text(
+    "This is an auto-generated report based on your profile & scoring algorithm.",
+    14,
+    pdf.internal.pageSize.height - 20
+  );
+
+  pdf.text("© 2025 CampusIQ", 14, pdf.internal.pageSize.height - 12);
+
+  pdf.save("College-Recommendation-Report.pdf");
+};
+
+
 
   // --- LOGOUT ---
   const handleLogout = () => {
@@ -138,6 +230,13 @@ function MainApp() {
     setUser(null);
     navigate("/");
   };
+
+  //recommendations
+   const handleRecommend = async () => {
+     setLoading(true); try { 
+      const response = await axios.post( "http://localhost:8080/api/recommendations", rankForm ); 
+    setRecommendations(response.data); } catch { alert("Failed to get recommendations."); } 
+    setLoading(false); };
 
   // --- AUTH SCREEN ---
   if (!token) {
@@ -165,9 +264,18 @@ function MainApp() {
             <Route path="/chatbot" element={<Chatbot />} />
             <Route path="/career-guidance" element={<LiveCareerGuidance />} />
             <Route path="/profile" element={<UserProfile />} />
-            <Route path="/live-seats" element={<LiveSeatDashboard />} />
-            <Route path="/ai-rank" element={<AIRankPredictor colleges={colleges} user={user} />} />
-            <Route path="/recommendation" element={<RecommendationForm rankForm={rankForm} setRankForm={setRankForm} />} />
+            {/*<Route path="/live-seats" element={<LiveSeatDashboard />} />
+            <Route path="/ai-rank" element={<AIRankPredictor colleges={colleges} user={user} />} />*/}
+            <Route path="/recommendation" element={ <RecommendationForm rankForm={rankForm} setRankForm={setRankForm} handleRecommend={handleRecommend} loading={loading} /> } />
+            <Route
+        path="/college/:id"
+        element={
+          <CollegeDetailsPage
+            compareList={compareList}
+            setCompareList={setCompareList}
+          />
+        }
+      />
           </Routes>
         </UserLayout>
       )}
@@ -195,8 +303,8 @@ function MainApp() {
       <Route path="/admin/users" element={<div>Users Management</div>} />
       <Route path="/admin/predictions" element={<div>Predictions</div>} />
       <Route path="/admin/reports" element={<div>Reports</div>} />
-
       <Route path="/admin/career-guidance" element={<AdminCareerGuidance />} />
+      
 
     </Routes>
   </AdminLayout>

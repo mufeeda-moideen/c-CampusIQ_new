@@ -2,7 +2,7 @@ import React from "react";
 
 import { Link } from "react-router-dom";
 import { 
-  BookOpen, Star, Building, Video, TrendingUp, Brain, User, Users, LogOut 
+  BookOpen, GraduationCap, Building, Video, TrendingUp, Brain, User, Users, LogOut ,Star
 } from "lucide-react";
 
 export default function HamburgerMenu({ closeMenu, handleLogout }) {
@@ -22,20 +22,20 @@ export default function HamburgerMenu({ closeMenu, handleLogout }) {
       </Link>
 
       <Link to="/quiz" onClick={closeMenu} className="menu-item">
-        <Star /> Career Quiz
+        <GraduationCap /> Career Quiz
       </Link>
 
       <Link to="/career-guidance" onClick={closeMenu} className="menu-item">
         <Video /> Live Career Guidance
       </Link>
 
-      <Link to="/live-seats" onClick={closeMenu} className="menu-item">
+      {/*<Link to="/live-seats" onClick={closeMenu} className="menu-item">
         <TrendingUp /> Live Seat Status
       </Link>
 
       <Link to="/ai-rank" onClick={closeMenu} className="menu-item">
         <Brain /> AI Rank Predictor
-      </Link>
+      </Link>*/}
 
       <Link to="/chatbot" onClick={closeMenu} className="menu-item">
         <Brain /> AI Assistant

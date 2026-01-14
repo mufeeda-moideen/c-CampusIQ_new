@@ -1,17 +1,28 @@
 const pool = require("../db");
 
 // ✅ GET ALL RESOURCES
+// ✅ GET ALL RESOURCES (FIXED for fileUrl)
 exports.getResources = async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM resources ORDER BY id DESC");
-    res.json(result.rows);
+
+    // Convert file_url → fileUrl for frontend
+    const formatted = result.rows.map(r => ({
+      ...r,
+      fileUrl: r.file_url
+    }));
+
+    res.json(formatted);
+
   } catch (err) {
     console.error("GET RESOURCES ERROR:", err);
     res.status(500).json({ error: "Failed to fetch resources" });
   }
 };
 
+
 // ✅ CREATE RESOURCE (FIXED FOR YOUR FORM)
+// ✅ CREATE RESOURCE (FIXED for fileUrl)
 exports.createResource = async (req, res) => {
   try {
     const r = req.body;
@@ -24,21 +35,27 @@ exports.createResource = async (req, res) => {
         r.title,
         r.category,
         r.type,
-        r.fileUrl,     // ✅ frontend uses fileUrl
-        r.metrics || 0, // ✅ map metrics → downloads
-        0,             // ✅ views default 0
+        r.fileUrl,
+        r.metrics || 0,
+        0,
         r.status
       ]
     );
 
-    res.json(result.rows[0]);
+    const row = result.rows[0];
+
+    res.json({
+      ...row,
+      fileUrl: row.file_url
+    });
+
   } catch (err) {
     console.error("CREATE RESOURCE ERROR:", err);
     res.status(500).json({ error: "Failed to create resource" });
   }
 };
 
-// ✅ UPDATE RESOURCE (FIXED)
+// ✅ UPDATE RESOURCE (FIXED for fileUrl)
 exports.updateResource = async (req, res) => {
   try {
     const r = req.body;
@@ -51,14 +68,20 @@ exports.updateResource = async (req, res) => {
         r.title,
         r.category,
         r.type,
-        r.fileUrl,       // ✅ correct mapping
-        r.metrics || 0,  // ✅ map metrics → downloads
+        r.fileUrl,
+        r.metrics || 0,
         r.status,
         req.params.id
       ]
     );
 
-    res.json(result.rows[0]);
+    const row = result.rows[0];
+
+    res.json({
+      ...row,
+      fileUrl: row.file_url
+    });
+
   } catch (err) {
     console.error("UPDATE RESOURCE ERROR:", err);
     res.status(500).json({ error: "Failed to update resource" });

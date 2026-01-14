@@ -1,6 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { Video, MessageCircle, Calendar, Clock, Star, Award, TrendingUp, BookOpen, Briefcase, Users, CheckCircle, ArrowRight, Sparkles, Target, Brain, Heart, Zap, DollarSign, MapPin, Phone, Mail, Globe, Plus, Edit, Trash2, Eye, UserCheck, Activity, BarChart3, Settings, Filter, Search, Download, Upload, X } from 'lucide-react';
 
+// Extract YouTube Video ID
+const getYouTubeId = (url) => {
+  if (!url) return "";
+  const regex = /(?:youtube\.com\/.*v=|youtu\.be\/)([^&]+)/;
+  const match = url.match(regex);
+  return match ? match[1] : "";
+};
+
+// Get full YouTube Thumbnail URL
+const getYouTubeThumbnail = (url) => {
+  const id = getYouTubeId(url);
+  return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : "";
+};
+
+
 const API_BASE = "http://localhost:8080/api";
 export default function AdminCareerGuidance() {
   const [activeTab, setActiveTab] = useState('sessions');
@@ -59,6 +74,7 @@ const loadAllData = async () => {
       processed.topics = processed.topics ? processed.topics.split(',').map(t => t.trim()).filter(Boolean) : [];
       processed.participants = parseInt(processed.participants) || 0;
       processed.rating = parseFloat(processed.rating) || 0;
+      processed.googlemeetlink = processed.googlemeetlink ? processed.googlemeetlink.trim() : '';
     } else if (type === 'counselor') {
       processed.expertise = processed.expertise ? processed.expertise.split(',').map(e => e.trim()).filter(Boolean) : [];
       processed.languages = processed.languages ? processed.languages.split(',').map(l => l.trim()).filter(Boolean) : [];
@@ -100,7 +116,22 @@ const loadAllData = async () => {
 
     if (modalType === "session") setSessions([...sessions, saved]);
     if (modalType === "counselor") setCounselors([...counselors, saved]);
-    if (modalType === "resource") setResources([...resources, saved]);
+    if (modalType === "resource") {
+  setResources(prev => {
+    const existing = prev.find(sec => sec.category === saved.category);
+  
+    if (existing) {
+      // add to existing category
+      return prev.map(sec =>
+        sec.category === saved.category
+          ? { ...sec, items: [...sec.items, saved] }
+          : sec
+      );
+    }
+    // create new category section
+    return [...prev, { category: saved.category, items: [saved] }];
+  });
+}
 
     closeModal();
   } catch (err) {
@@ -132,8 +163,17 @@ const loadAllData = async () => {
     if (modalType === "counselor")
       setCounselors(counselors.map(i => i.id === updated.id ? updated : i));
 
-    if (modalType === "resource")
-      setResources(resources.map(i => i.id === updated.id ? updated : i));
+    if (modalType === "resource") {
+  setResources(prev =>
+    prev.map(sec => ({
+      ...sec,
+      items: sec.items.map(item =>
+        item.id === updated.id ? updated : item
+      )
+    }))
+  );
+}
+
 
     closeModal();
   } catch (err) {
@@ -157,7 +197,17 @@ const loadAllData = async () => {
 
     if (activeTab === "sessions") setSessions(sessions.filter(i => i.id !== id));
     if (activeTab === "counselors") setCounselors(counselors.filter(i => i.id !== id));
-    if (activeTab === "resources") setResources(resources.filter(i => i.id !== id));
+    if (activeTab === "resources") {
+  setResources(prev =>
+    prev
+      .map(sec => ({
+        ...sec,
+        items: sec.items.filter(item => item.id !== id)
+      }))
+      .filter(sec => sec.items.length > 0) // remove empty categories
+  );
+}
+
 
   } catch (err) {
     console.error("Delete failed", err);
@@ -184,7 +234,8 @@ const loadAllData = async () => {
         status: "upcoming",
         participants: 0,
         rating: 0,
-        thumbnail: "📚"
+        thumbnail: "📚",
+        googlemeetlink: "" 
       };
     } else if (type === 'counselor') {
       initialData = item ? {
@@ -334,6 +385,8 @@ const cancelBooking = async (id) => {
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Participants</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Status</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Actions</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Meet Link</th>
+
                   </tr>
                 </thead>
                 <tbody>
@@ -356,6 +409,7 @@ const cancelBooking = async (id) => {
                           {session.status}
                         </span>
                       </td>
+                      
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <button className="p-2 hover:bg-indigo-50 rounded-lg transition-all">
@@ -374,6 +428,12 @@ const cancelBooking = async (id) => {
                             <Trash2 className="w-4 h-4 text-red-600" />
                           </button>
                         </div>
+                      </td>
+                      
+                      <td className="px-6 py-4 text-blue-600 underline cursor-pointer">
+                        <a href={session.googlemeetlink} target="_blank" rel="noopener noreferrer">
+                          Join
+                        </a>
                       </td>
                     </tr>
                   ))}
@@ -523,68 +583,112 @@ const cancelBooking = async (id) => {
             </div>
           </div>
         )}
-        {activeTab === 'resources' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                <BookOpen className="w-6 h-6 text-indigo-600" />
-                Manage Resources
-              </h2>
-              <button
-                onClick={() => openModal('resource')}
-                className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium hover:shadow-lg transition-all flex items-center gap-2"
-              >
-                <Plus className="w-5 h-5" />
-                Add New Resource
-              </button>
-            </div>
-            <div className="space-y-8">
-              {resources.map((section, idx) => (
-                <div key={idx}>
-                  <h3 className="text-lg font-bold text-gray-800 mb-4">{section.category}</h3>
-                  <div className="grid md:grid-cols-3 gap-6">
-                    {section.items?.map((item, itemIdx) => (
-                      <div key={itemIdx} className="bg-white rounded-xl shadow-lg p-6 border-2 border-gray-100 hover:shadow-xl hover:border-indigo-200 transition-all">
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded text-xs font-bold">
-                            {item.type}
-                          </div>
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}>
-                            {item.status}
-                          </span>
-                        </div>
-                        
-                        <h4 className="font-bold text-gray-800 mb-2">{item.title}</h4>
-                        
-                        <div className="text-sm text-gray-600 mb-4">
-                          {item.downloads ? `${item.downloads.toLocaleString()} downloads` : `${item.views?.toLocaleString()} views`}
-                        </div>
-                        
-                        <div className="flex items-center gap-2">
-                          <button className="flex-1 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg font-medium hover:bg-indigo-100 transition-all">
-                            View
-                          </button>
-                          <button
-                            onClick={() => openModal('resource', item)}
-                            className="p-2 hover:bg-green-50 rounded-lg transition-all"
-                          >
-                            <Edit className="w-5 h-5 text-green-600" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(item.id)}
-                            className="p-2 hover:bg-red-50 rounded-lg"
-                          >
-                            <Trash2 className="w-5 h-5 text-red-600" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+        {/* RESOURCES TAB */}
+{/* RESOURCES TAB */}
+{activeTab === "resources" && (
+  <div className="space-y-6">
+
+    {/* HEADER */}
+    <div className="flex items-center justify-between mb-6">
+      <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+        <BookOpen className="w-6 h-6 text-indigo-600" />
+        Resources
+      </h2>
+
+      <button
+        onClick={() => openModal("resource")}
+        className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium hover:shadow-lg transition-all flex items-center gap-2"
+      >
+        <Plus className="w-5 h-5" />
+        Add New Resource
+      </button>
+    </div>
+
+    {/* GROUPED BY CATEGORY */}
+    {resources.map((section) => (
+      <div
+        key={section.category}
+        className="bg-white shadow-lg rounded-xl p-6 border border-gray-100"
+      >
+        <h3 className="text-lg font-bold text-gray-800 mb-4">{section.category}</h3>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {section.items.map((res) => (
+            <div
+              key={res.id}
+              className="bg-gray-50 border rounded-xl shadow hover:shadow-lg transition-all overflow-hidden"
+            >
+
+              {/* TITLE BLOCK */}
+              <div className="border-b p-4">
+                <h3 className="font-semibold text-lg">{res.title}</h3>
+              </div>
+
+              {/* YOUTUBE THUMBNAIL */}
+              {res.type === "YouTube" ? (
+                <a
+                  href={res.fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block relative group"
+                >
+                  <img
+                    src={getYouTubeThumbnail(res.fileUrl)}
+                    alt="YouTube Thumbnail"
+                    className="w-full h-48 object-cover"
+                  />
+
+                  {/* Play Overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-all">
+                    <div className="bg-white/90 p-3 rounded-full">
+                      <Video className="w-8 h-8 text-red-600" />
+                    </div>
                   </div>
+                </a>
+              ) : (
+                /* PDF / OTHER FILE */
+                <a
+                  href={res.fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-6 flex flex-col items-center justify-center text-center hover:bg-gray-100 transition-all"
+                >
+                  <BookOpen className="w-12 h-12 text-indigo-600 mb-2" />
+                  <p className="text-gray-700">Click to open file</p>
+                </a>
+              )}
+
+              {/* ACTIONS FOOTER */}
+              <div className="px-4 py-3 border-t bg-white flex items-center justify-between">
+                <span className="text-sm text-gray-600">{res.type}</span>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => openModal("resource", res)}
+                    className="p-2 hover:bg-green-100 rounded-lg"
+                  >
+                    <Edit className="w-4 h-4 text-green-600" />
+                  </button>
+
+                  <button
+                    onClick={() => handleDelete(res.id)}
+                    className="p-2 hover:bg-red-100 rounded-lg"
+                  >
+                    <Trash2 className="w-4 h-4 text-red-600" />
+                  </button>
                 </div>
-              ))}
+              </div>
+
             </div>
-          </div>
-        )}
+          ))}
+        </div>
+
+      </div>
+    ))}
+  </div>
+)}
+
+
         {showModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -721,6 +825,16 @@ const cancelBooking = async (id) => {
                           <option value="completed">Completed</option>
                         </select>
                       </div>
+                      <div>
+                      <label className="block text-sm font-semibold text-gray-700">Google Meet Link</label>
+                      <input
+                        type="text"
+                        value={formData.googlemeetlink || ""}
+                        onChange={(e) => setFormData({ ...formData, googlemeetlink: e.target.value })}
+                        className={inputClass}
+                        placeholder="https://meet.google.com/abc-defg-hij"
+                      />
+                    </div>
                     </>
                   )}
                   {modalType === 'counselor' && (

@@ -247,7 +247,15 @@ export default function ChatbotInterface() {
           </div>
         </div>
       </div>*/}
-
+      <div className="max-w-7xl mx-auto px-6 py-5">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              AI Assistant
+            </h1>
+          
+          </div>
+        {/*</div>*/}
+      </div>
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Main Chat Area */}

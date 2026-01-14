@@ -3,7 +3,9 @@ const pool = require("../db");
 const router = express.Router();
 const adminAuth = require("../middleware/adminAuth");
 
-// Get all colleges
+// ---------------------------------------------
+// GET ALL COLLEGES
+// ---------------------------------------------
 router.get("/colleges", async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM college ORDER BY name");
@@ -14,7 +16,10 @@ router.get("/colleges", async (req, res) => {
   }
 });
 
-router.post("/colleges",adminAuth, async (req, res) => {
+// ---------------------------------------------
+// ADD NEW COLLEGE
+// ---------------------------------------------
+router.post("/colleges", adminAuth, async (req, res) => {
   const {
     name,
     location,
@@ -54,7 +59,9 @@ router.post("/colleges",adminAuth, async (req, res) => {
   }
 });
 
-// Smart Recommendation Route
+// ---------------------------------------------
+// 🧠 AI-Powered Smart Recommendation Route
+// ---------------------------------------------
 router.post("/recommendations", async (req, res) => {
   const {
     examType,
@@ -65,9 +72,12 @@ router.post("/recommendations", async (req, res) => {
     careerGoal,
     campusType,
     collegeType,
+    userLocation,         // NEW
+    preferredDistance,    // NEW
   } = req.body;
 
   try {
+    // BASIC QUERY (strict filters)
     let query = "SELECT * FROM college WHERE 1=1";
     const params = [];
     let idx = 1;
@@ -98,22 +108,88 @@ router.post("/recommendations", async (req, res) => {
       params.push(campusType);
     }
 
-    const result = await pool.query(query, params);
+    let result = await pool.query(query, params);
+    let colleges = result.rows;
 
-    // Optional: Sort by placement rate if careerGoal is placement
-    let recommendations = result.rows;
-    if (careerGoal === "placement") {
-      recommendations = recommendations.sort((a, b) => b.placement_rate - a.placement_rate);
+    // -------------------------------------------------------
+    // 🔁 FALLBACK: If NO strict match, fetch all colleges
+    // -------------------------------------------------------
+    if (colleges.length === 0) {
+      console.log("No strict match found. Applying best-match logic...");
+      const fallbackResult = await pool.query("SELECT * FROM college");
+      colleges = fallbackResult.rows;
     }
 
-    res.json(recommendations);
+    // -------------------------------------------------------
+    // 🧠 AI LOGIC – FIT SCORE FOR EACH COLLEGE (0 - 100)
+    // -------------------------------------------------------
+    function calculateFitScore(college) {
+      let score = 0;
+
+      // 1. Rank Fit (30%)
+      if (rank) {
+        let rankFit = 0;
+        if (college.cutoff_rank >= rank) rankFit = 100;
+        else {
+          const diff = rank - college.cutoff_rank;
+          rankFit = Math.max(0, 100 - diff / 5);
+        }
+        score += rankFit * 0.30;
+      }
+
+      // 2. Placement Rate (25%)
+      score += (college.placement_rate || 0) * 0.25;
+
+      // 3. Fees-to-Value Ratio (20%)
+      let feeScore = 0;
+      if (college.fee <= 50000) feeScore = 100;
+      else if (college.fee <= 150000) feeScore = 70;
+      else feeScore = 40;
+      score += feeScore * 0.20;
+
+      // 4. Travel Distance (15%)
+      let distanceScore = 100;
+      if (userLocation && preferredDistance) {
+        if (college.location.toLowerCase() === userLocation.toLowerCase()) {
+          distanceScore = 100;
+        } else {
+          distanceScore = 50;
+        }
+        score += distanceScore * 0.15;
+      }
+
+      // 5. Teaching Style + Hostel + Reviews (10%)
+      let extras = 0;
+      if (college.hostel_available) extras += 40;
+      if (college.teaching_style === "modern") extras += 60;
+      score += extras * 0.10;
+
+      return Math.round(score);
+    }
+
+    // APPLY SCORE TO EACH COLLEGE
+    colleges = colleges.map((c) => ({
+      ...c,
+      fit_score: calculateFitScore(c),
+    }));
+
+    // SORT BY HIGHEST SCORE FIRST
+    colleges.sort((a, b) => b.fit_score - a.fit_score);
+
+    // Return TOP 10 best-fit colleges
+    colleges = colleges.slice(0, 10);
+
+    res.json(colleges);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Server error" });
   }
 });
-// Delete a college
-router.delete("/colleges/:id",adminAuth, async (req, res) => {
+
+// ---------------------------------------------
+// DELETE COLLEGE
+// ---------------------------------------------
+router.delete("/colleges/:id", adminAuth, async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -134,4 +210,3 @@ router.delete("/colleges/:id",adminAuth, async (req, res) => {
 });
 
 module.exports = router;
-
