@@ -1,6 +1,6 @@
 // --- IMPORTS ---
 import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation  } from "react-router-dom";
 import axios from "axios";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -22,6 +22,8 @@ import UserProfile from "./components/UserProfile";
 import LiveSeatDashboard from "./components/LiveSeatDashboard";
 import AIRankPredictor from "./components/AIRankPredictor";
 import CollegeDetailsPage from "./components/CollegeDetailsPage";
+import CompleteProfile from "./components/CompleteProfile.jsx";
+
 
 
 // Admin Pages
@@ -41,17 +43,18 @@ export default function App() {
 // --- MAIN LOGIC ---
 function MainApp() {
   const navigate = useNavigate();
-
+  const location = useLocation();
   const [token, setToken] = useState("");
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState({
-    name: "",
-    email: "",
-    password: "",
-    role: "user",
-  });
+  fullname: "",
+  email: "",
+  password: "",
+  role: "user",
+});
+
 
   const [rankForm, setRankForm] = useState({});
   const [collegeForm, setCollegeForm] = useState({});
@@ -60,6 +63,44 @@ function MainApp() {
   const [filteredColleges, setFilteredColleges] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [compareList, setCompareList] = useState([]);
+
+
+  useEffect(() => {
+  if (!user || !token) return;
+
+  const path = location.pathname;
+
+  if (user.role === "admin") {
+    if (!path.startsWith("/admin")) {
+      navigate("/admin", { replace: true });
+    }
+    return;
+  }
+
+  if (!user.is_profile_complete && path !== "/complete-profile") {
+    navigate("/complete-profile", { replace: true });
+    return;
+  }
+
+  if (path === "/" || path === "/login") {
+    navigate("/", { replace: true });
+  }
+}, [user, token, location.pathname]);
+
+
+
+  useEffect(() => {
+  const u = JSON.parse(localStorage.getItem("user"));
+  const t = localStorage.getItem("token");
+
+  if (u && t) {
+    setUser(u);
+    setToken(t);
+  }
+}, []);
+
+
+
 
   // --- LOGIN ---
   const handleLogin = async () => {
@@ -80,12 +121,13 @@ function MainApp() {
       if (!res.ok) return alert("Login failed");
 
       setToken(data.token);
-      setUser({ role: form.role });
+setUser(data.user); // ✅ real backend user
 
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("role", form.role);
+localStorage.setItem("token", data.token);
+localStorage.setItem("user", JSON.stringify(data.user)); // ✅ REQUIRED
+localStorage.setItem("role", form.role);
 
-      navigate(form.role === "admin" ? "/admin" : "/dashboard");
+
     } catch {
       alert("Server error");
     }
@@ -94,18 +136,40 @@ function MainApp() {
 
   // --- SIGNUP ---
   const handleSignup = async () => {
-    setLoading(true);
-    await fetch("http://localhost:8080/api/auth/signup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
+  setLoading(true);
+  try {
+            const res = await fetch("http://localhost:8080/api/auth/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(form),
+        });
 
-    setToken("mock-token");
-    setUser({ role: "user" });
-    navigate("/dashboard");
-    setLoading(false);
-  };
+        // Log the form data here to verify
+        console.log("Form data being sent:", form);
+        console.log("JSON stringified form data:", JSON.stringify(form));
+    
+
+    const data = await res.json();
+    if (!res.ok) {
+      alert(data.message || "Signup failed");
+      return;
+    }
+
+    // ✅ store real data
+    setToken(data.token);
+    setUser(data.user);
+
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("user", JSON.stringify(data.user));
+    localStorage.setItem("role", "user");
+
+    // ✅ redirect based on profile status
+   
+  } catch (err) {
+    alert("Server error");
+  }
+  setLoading(false);
+};
 
   // --- FETCH COLLEGES ---
   useEffect(() => {
@@ -147,7 +211,7 @@ const handlePDF = () => {
 
   pdf.setFontSize(12);
   pdf.setTextColor(100);
-  pdf.text(`Generated for: ${user?.name || "User"}`, 14, 30);
+  pdf.text(`Generated for: ${user?.fullname || "User"}`, 14, 30);
   pdf.text(`Date: ${new Date().toLocaleDateString()}`, 14, 36);
 
   // --- SUMMARY BOX ---
@@ -225,11 +289,13 @@ const handlePDF = () => {
 
   // --- LOGOUT ---
   const handleLogout = () => {
-    localStorage.clear();
-    setToken("");
-    setUser(null);
-    navigate("/");
-  };
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+  localStorage.removeItem("role");
+  setToken(null);
+  setUser(null);
+};
+
 
   //recommendations
    const handleRecommend = async () => {
@@ -238,6 +304,10 @@ const handlePDF = () => {
     setRecommendations(response.data); } catch { alert("Failed to get recommendations."); } 
     setLoading(false); };
 
+
+    if (token && !user) {
+  return <div style={{ padding: 40 }}>Loading profile...</div>;
+}
   // --- AUTH SCREEN ---
   if (!token) {
     return (
@@ -256,29 +326,50 @@ const handlePDF = () => {
     <>
       {user?.role !== "admin" && (
         <UserLayout handleLogout={handleLogout}>
-          <Routes>
-            <Route path="/dashboard" element={<Dashboard colleges={colleges} />} />
-            <Route path="/recommendations" element={<Recommendations recommendations={recommendations} handlePDF={handlePDF} />} />
-            <Route path="/colleges" element={<Colleges colleges={filteredColleges} searchTerm={searchTerm} handleSearch={handleSearch} />} />
-            <Route path="/quiz" element={<QuizSession />} />
-            <Route path="/chatbot" element={<Chatbot />} />
-            <Route path="/career-guidance" element={<LiveCareerGuidance />} />
-            <Route path="/profile" element={<UserProfile />} />
-            {/*<Route path="/live-seats" element={<LiveSeatDashboard />} />
-            <Route path="/ai-rank" element={<AIRankPredictor colleges={colleges} user={user} />} />*/}
-            <Route path="/recommendation" element={ <RecommendationForm rankForm={rankForm} setRankForm={setRankForm} handleRecommend={handleRecommend} loading={loading} /> } />
-            <Route
-        path="/college/:id"
-        element={
-          <CollegeDetailsPage
-            compareList={compareList}
-            setCompareList={setCompareList}
-          />
-        }
-      />
-          </Routes>
-        </UserLayout>
-      )}
+  <Routes>
+    <Route
+  path="/"
+  element={
+    user?.is_profile_complete ? (
+      <Dashboard colleges={colleges} />
+    ) : (
+      <CompleteProfile setUser={setUser} />
+    )
+  }
+/>
+
+
+    <Route
+  path="/complete-profile"
+  element={<CompleteProfile setUser={setUser} />}
+/>
+
+
+    <Route path="/recommendations" element={<Recommendations recommendations={recommendations} handlePDF={handlePDF} />} />
+    <Route path="/colleges" element={<Colleges colleges={filteredColleges} searchTerm={searchTerm} handleSearch={handleSearch} />} />
+    <Route path="/quiz" element={<QuizSession />} />
+    <Route path="/chatbot" element={<Chatbot />} />
+    <Route path="/career-guidance" element={<LiveCareerGuidance />} />
+    <Route path="/profile" element={<UserProfile />} />
+
+    <Route
+      path="/recommendation"
+      element={
+        <RecommendationForm
+          rankForm={rankForm}
+          setRankForm={setRankForm}
+          handleRecommend={handleRecommend}
+          loading={loading}
+        />
+      }
+    />
+
+    <Route
+      path="/college/:id"
+      element={<CollegeDetailsPage compareList={compareList} setCompareList={setCompareList} />}
+    />
+  </Routes>
+</UserLayout>)}
 
       {user?.role === "admin" && (
   <AdminLayout handleLogout={handleLogout}>

@@ -43,6 +43,10 @@ app.use('/api/colleges', collegeRoutes);
 const userRoutes = require("./routes/userRoutes");
 app.use("/api/user", userRoutes);
 
+const completeProfileRoutes = require("./routes/complete-profile");
+app.use("/api/user", completeProfileRoutes);
+
+
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {

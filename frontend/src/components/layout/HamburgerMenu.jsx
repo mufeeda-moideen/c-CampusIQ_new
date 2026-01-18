@@ -9,7 +9,7 @@ export default function HamburgerMenu({ closeMenu, handleLogout }) {
   return (
     <div className="bg-white border-t shadow-xl px-6 py-5 space-y-6 absolute top-[90px] right-0 w-full md:w-80 z-[999]">
 
-      <Link to="/dashboard" onClick={closeMenu} className="menu-item">
+      <Link to="/" onClick={closeMenu} className="menu-item">
         <BookOpen /> Dashboard
       </Link>
 

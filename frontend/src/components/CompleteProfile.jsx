@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from "react";
 import { User, Mail, Phone, MapPin, Calendar, Award, CheckCircle, ArrowRight } from 'lucide-react';
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 
-export default function CompleteProfile() {
+export default function CompleteProfile({ setUser }) {
     const navigate = useNavigate();
   const [step, setStep] = useState(1);
+  
   const [profileData, setProfileData] = useState({
     // From signup (already have)
-    fullName: '',
+    fullname: '',
     email: '',
     // Need to collect
     phone: '',
@@ -18,6 +19,43 @@ export default function CompleteProfile() {
     category: '',
     profileImage: '👩‍🎓'
   });
+
+
+  const [checking, setChecking] = useState(true);
+
+useEffect(() => {
+  const storedUser = JSON.parse(localStorage.getItem("user"));
+  const token = localStorage.getItem("token");
+
+  if (!storedUser || !token) {
+    navigate("/login", { replace: true });
+    return;
+  }
+
+  if (storedUser.is_profile_complete) {
+    navigate("/", { replace: true });
+    return;
+  }
+
+  setProfileData(prev => ({
+    ...prev,
+    fullname: storedUser.fullname,
+    email: storedUser.email,
+  }));
+
+  setChecking(false);
+}, [navigate]);
+
+if (checking) {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <p className="text-gray-500">Checking profile...</p>
+    </div>
+  );
+}
+
+
+
 
   const totalSteps = 2;
   const progress = (step / totalSteps) * 100;
@@ -34,30 +72,46 @@ export default function CompleteProfile() {
     }
   };
 
+
  const handleSubmit = async () => {
-  await axios.put(
-  "/api/user/complete-profile",
-  {
-    phone: profileData.phone,
-    dob: profileData.dob,
-    location: profileData.location,
-    category: profileData.category
-  },
-  {
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem("token")}`
-    }
+  try {
+    await axios.put(
+      "http://localhost:8080/api/user/complete-profile",
+      {
+        phone: profileData.phone,
+        dob: profileData.dob,
+        location: profileData.location,
+        category: profileData.category,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+
+    // ✅ Sync React state + localStorage
+    const updatedUser = {
+      ...JSON.parse(localStorage.getItem("user")),
+      is_profile_complete: true,
+    };
+
+    localStorage.setItem("user", JSON.stringify(updatedUser));
+    setUser(updatedUser); // 🔥 THIS FIXES THE DELAY ISSUE
+
+    navigate("/", { replace: true }); // ✅ correct route
+  } catch (err) {
+    alert(err.response?.data?.message || "Profile update failed");
   }
-);
-
-
-  navigate("/dashboard");
 };
 
 
-  const isStep1Valid = profileData.phone && profileData.dob;
+  const phoneRegex = /^[6-9]\d{9}$/;
+const isStep1Valid = phoneRegex.test(profileData.phone) && profileData.dob;
+
   const isStep2Valid = profileData.location && profileData.category;
 
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-2xl">
@@ -108,7 +162,7 @@ export default function CompleteProfile() {
                 <div className="ml-7 space-y-2">
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <User className="w-4 h-4" />
-                    <span>{profileData.fullName}</span>
+                    <span>{profileData.fullname}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Mail className="w-4 h-4" />
@@ -208,7 +262,7 @@ export default function CompleteProfile() {
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center gap-2 text-gray-700">
                     <CheckCircle className="w-4 h-4 text-green-600" />
-                    <span><strong>Name:</strong> {profileData.fullName}</span>
+                    <span><strong>Name:</strong> {profileData.fullname}</span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-700">
                     <CheckCircle className="w-4 h-4 text-green-600" />
@@ -267,7 +321,7 @@ export default function CompleteProfile() {
             )}
           </div>
 
-          {/* Skip Option */}
+          {/* Skip Option 
           <div className="text-center mt-4">
             <button
             onClick={() => navigate("/dashboard")}
@@ -276,7 +330,7 @@ export default function CompleteProfile() {
             I'll do this later →
             </button>
 
-          </div>
+          </div>*/}
         </div>
 
         {/* Trust Indicators */}

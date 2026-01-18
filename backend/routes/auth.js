@@ -5,9 +5,10 @@ const pool = require("../db");
 
 const router = express.Router();
 
-// Signup
+// --- SIGNUP ---
 router.post("/signup", async (req, res) => {
   const { fullname, email, password } = req.body;
+  console.log("Request body:", req.body);
 
   if (!fullname || !email || !password) {
     return res.status(400).json({ error: "All fields are required" });
@@ -25,22 +26,34 @@ router.post("/signup", async (req, res) => {
 
     // Insert user
     const result = await pool.query(
-  `INSERT INTO users (fullname, email, password, is_profile_complete)
-   VALUES ($1, $2, $3, false)
-   RETURNING id, fullname, email, is_profile_complete`,
-  [fullname, email, hashedPassword]
-);
-
+      `INSERT INTO users (fullname, email, password, is_profile_complete)
+       VALUES ($1, $2, $3, false)
+       RETURNING id, fullname, email, is_profile_complete`,
+      [fullname, email, hashedPassword]
+    );
 
     const newUser = result.rows[0];
-    res.status(201).json({ message: "User registered successfully", user: newUser });
+
+    // ✅ Generate JWT immediately
+    const token = jwt.sign(
+      { id: newUser.id, email: newUser.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" } // optional: longer expiry than login
+    );
+
+    // ✅ Return token + user
+    res.status(201).json({
+      message: "User registered successfully",
+      token,
+      user: newUser
+    });
   } catch (err) {
     console.error(err.message);
     res.status(500).json({ error: "Server error" });
   }
 });
 
-// Login
+// --- LOGIN (no changes needed) ---
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
@@ -51,9 +64,9 @@ router.post("/login", async (req, res) => {
   try {
     // Check if user exists
     const user = await pool.query(
-  "SELECT id, fullname, email, password, is_profile_complete FROM users WHERE email=$1",
-  [email]
-);
+      "SELECT id, fullname, email, password, is_profile_complete FROM users WHERE email=$1",
+      [email]
+    );
 
     if (user.rows.length === 0) {
       return res.status(400).json({ error: "Invalid email or password" });
@@ -68,23 +81,27 @@ router.post("/login", async (req, res) => {
     }
 
     // Generate JWT
-    const token = jwt.sign({ id: dbUser.id, email: dbUser.email }, process.env.JWT_SECRET, { expiresIn: "1h" });
+    const token = jwt.sign(
+      { id: dbUser.id, email: dbUser.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
 
     res.json({
-  message: "Login successful",
-  token,
-  user: {
-    id: dbUser.id,
-    fullname: dbUser.fullname,
-    email: dbUser.email,
-    isProfileComplete: dbUser.is_profile_complete
-  }
-});
+      message: "Login successful",
+      token,
+      user: {
+        id: dbUser.id,
+        fullname: dbUser.fullname,
+        email: dbUser.email,
+        is_profile_complete: dbUser.is_profile_complete
+      }
+    });
 
   } catch (err) {
     console.error(err.message);
     res.status(500).json({ error: "Server error" });
   }
-});  
+});
 
 module.exports = router;
