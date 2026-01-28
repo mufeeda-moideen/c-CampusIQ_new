@@ -1,18 +1,87 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+
 import { User, Mail, Phone, MapPin, Calendar, Award, Edit2, Camera, Save, CheckCircle, Clock, Heart, Settings, Trophy } from 'lucide-react';
 
 export default function UserProfile() {
   const [isEditing, setIsEditing] = useState(false);
 
   const [profile, setProfile] = useState({
-    name: 'Mufeeda',
-    email: 'mufeeda@email.com',
-    phone: '+91 98765 43210',
-    location: 'Tirur, Kerala',
-    dob: '15 March 2006',
-    category: 'General',
-    profileImage: '👩‍🎓'
-  });
+  name: '',
+  email: '',
+  phone: '',
+  location: '',
+  dob: '',
+  category: '',
+  profileImage: '👩‍🎓'
+});
+
+useEffect(() => {
+  fetchProfile();
+}, []);
+
+const fetchProfile = async () => {
+  try {
+    const res = await axios.get(
+      'http://localhost:8080/api/user/profile',
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      }
+    );
+
+    setProfile((prev) => ({
+  ...prev, // ✅ keeps profileImage
+  name: res.data.fullname,
+  email: res.data.email,
+  phone: res.data.phone,
+  location: res.data.location,
+  dob: res.data.dob?.split('T')[0] || '',
+  category: res.data.category,
+}));
+
+  } catch (err) {
+    console.error('Failed to load profile');
+  }
+};
+
+const handleSave = async () => {
+  if (!isEditing) {
+    setIsEditing(true);
+    return;
+  }
+
+  try {
+    if (!profile.phone || !profile.location) {
+  alert("Please fill all required fields");
+  return;
+}
+
+    await axios.put(
+      'http://localhost:8080/api/user/profile',
+      {
+        phone: profile.phone,
+        dob: profile.dob,
+        location: profile.location,
+        category: profile.category,
+        //profile_image: profile.profileImage,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      }
+    );
+    alert("Profile updated successfully");
+
+    setIsEditing(false);
+  } catch (err) {
+    console.error('Failed to update profile');
+  }
+};
+
+
 
   const savedColleges = [
     {
@@ -78,11 +147,9 @@ export default function UserProfile() {
 
                 <div className="text-center mb-6">
                   <h2 className="text-2xl font-bold text-gray-800 mb-1">{profile.name}</h2>
-                  <p className="text-gray-600 mb-3">Aspiring Engineer</p>
-                  <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
-                    <MapPin className="w-4 h-4" />
-                    {profile.location}
-                  </div>
+                  {/*<p className="text-gray-600 mb-3">Aspiring Engineer</p>*/}
+                 
+
                 </div>
 
                 {/* Quick Stats */}
@@ -99,26 +166,87 @@ export default function UserProfile() {
 
                 {/* Contact Info */}
                 <div className="space-y-3 mb-6">
+                   <div className="flex items-center gap-3 text-sm text-gray-600">
+  <MapPin className="w-4 h-4" />
+
+  {isEditing ? (
+    <input
+      type="text"
+      value={profile.location}
+      onChange={(e) =>
+        setProfile({ ...profile, location: e.target.value })
+      }
+      className="border rounded px-2 py-1 text-sm w-full"
+    />
+  ) : (
+    <span>{profile.location}</span>
+  )}
+</div>
                   <div className="flex items-center gap-3 text-sm text-gray-600">
                     <Mail className="w-4 h-4" />
                     <span className="truncate">{profile.email}</span>
                   </div>
                   <div className="flex items-center gap-3 text-sm text-gray-600">
-                    <Phone className="w-4 h-4" />
-                    <span>{profile.phone}</span>
-                  </div>
+  <Phone className="w-4 h-4" />
+
+  {isEditing ? (
+    <input
+      type="text"
+      value={profile.phone}
+      onChange={(e) =>
+        setProfile({ ...profile, phone: e.target.value })
+      }
+      className="border rounded px-2 py-1 text-sm max-w-[180px]"
+
+    />
+  ) : (
+    <span>{profile.phone}</span>
+  )}
+</div>
+
                   <div className="flex items-center gap-3 text-sm text-gray-600">
-                    <Calendar className="w-4 h-4" />
-                    <span>{profile.dob}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm text-gray-600">
-                    <Award className="w-4 h-4" />
-                    <span>Category: {profile.category}</span>
-                  </div>
+  <Calendar className="w-4 h-4" />
+
+  {isEditing ? (
+    <input
+      type="date"
+      value={profile.dob}
+      onChange={(e) =>
+        setProfile({ ...profile, dob: e.target.value })
+      }
+      className="border rounded px-2 py-1 text-sm w-full"
+    />
+  ) : (
+    <span>{profile.dob}</span>
+  )}
+</div>
+
+                 <div className="flex items-center gap-3 text-sm text-gray-600">
+  <Award className="w-4 h-4" />
+
+  {isEditing ? (
+    <select
+      value={profile.category}
+      onChange={(e) =>
+        setProfile({ ...profile, category: e.target.value })
+      }
+      className="border rounded px-2 py-1 text-sm w-full"
+    >
+      <option value="">Select</option>
+      <option value="General">General</option>
+      <option value="OBC">OBC</option>
+      <option value="SC">SC</option>
+      <option value="ST">ST</option>
+    </select>
+  ) : (
+    <span>Category: {profile.category}</span>
+  )}
+</div>
+
                 </div>
 
                 <button
-                  onClick={() => setIsEditing(!isEditing)}
+                  onClick={handleSave}
                   className="w-full px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-medium hover:shadow-lg transition-all flex items-center justify-center gap-2"
                 >
                   {isEditing ? <Save className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}

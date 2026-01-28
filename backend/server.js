@@ -46,6 +46,9 @@ app.use("/api/user", userRoutes);
 const completeProfileRoutes = require("./routes/complete-profile");
 app.use("/api/user", completeProfileRoutes);
 
+const profileRoutes = require("./routes/profileRoutes");
+app.use("/api/user", profileRoutes);
+
 
 
 const PORT = process.env.PORT || 8080;
