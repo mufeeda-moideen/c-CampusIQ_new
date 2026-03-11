@@ -32,10 +32,17 @@ useEffect(() => {
     return;
   }
 
-  if (storedUser.is_profile_complete) {
-    navigate("/", { replace: true });
-    return;
-  }
+  // 🚀 Admin should never see this page
+if (storedUser.role === "admin") {
+  navigate("/admin", { replace: true });
+  return;
+}
+
+// User profile already completed
+if (storedUser.is_profile_complete) {
+  navigate("/", { replace: true });
+  return;
+}
 
   setProfileData(prev => ({
     ...prev,

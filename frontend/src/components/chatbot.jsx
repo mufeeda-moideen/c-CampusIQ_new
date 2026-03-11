@@ -111,88 +111,55 @@ export default function ChatbotInterface() {
   ];
 
   const handleSendMessage = async () => {
-    if (!inputValue.trim()) return;
+  if (!inputValue.trim()) return;
 
-    const userMessage = {
-      id: messages.length + 1,
-      text: inputValue,
-      sender: 'user',
-      timestamp: new Date()
-    };
+  const userMessage = {
+    id: messages.length + 1,
+    text: inputValue,
+    sender: "user",
+    timestamp: new Date()
+  };
 
-    setMessages([...messages, userMessage]);
-    setInputValue('');
-    setIsTyping(true);
-    setShowSuggestions(false);
+  setMessages(prev => [...prev, userMessage]);
+  setInputValue("");
+  setIsTyping(true);
+  setShowSuggestions(false);
 
-    // Simulate bot response
-    setTimeout(() => {
-      const botResponse = generateBotResponse(inputValue);
-      setMessages(prev => [...prev, {
+  try {
+    const res = await fetch("http://localhost:8080/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: userMessage.text })
+    });
+
+    const data = await res.json();
+
+    setMessages(prev => [
+      ...prev,
+      {
         id: prev.length + 1,
-        text: botResponse.text,
-        sender: 'bot',
+        text: data.reply,
+        sender: "bot",
         timestamp: new Date(),
-        suggestions: botResponse.suggestions
-      }]);
-      setIsTyping(false);
-    }, 1500);
+        source: data.source // optional (rule / cache / llm)
+      }
+    ]);
+  } catch (err) {
+    setMessages(prev => [
+      ...prev,
+      {
+        id: prev.length + 1,
+        text: "⚠️ Server not responding. Please try again.",
+        sender: "bot",
+        timestamp: new Date()
+      }
+    ]);
+  } finally {
+    setIsTyping(false);
+  }
+};
 
-    // Real API call:
-    // const response = await fetch('http://localhost:5000/api/chat', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ message: inputValue, history: messages })
-    // });
-    // const data = await response.json();
-  };
-
-  const generateBotResponse = (message) => {
-    const lowerMsg = message.toLowerCase();
-    
-    if (lowerMsg.includes('college') || lowerMsg.includes('university') || lowerMsg.includes('find')) {
-      return {
-        text: "Great! I can help you find the perfect college. To give you the best recommendations, I need to know:\n\n• Your entrance exam rank (JEE, NEET, etc.)\n• Preferred location\n• Course/Stream of interest\n• Budget range\n\nYou can also use our smart filters to search through 500+ colleges in our database!",
-        suggestions: ["Search colleges now", "Tell me about top colleges", "What documents do I need?"]
-      };
-    } else if (lowerMsg.includes('career') || lowerMsg.includes('job') || lowerMsg.includes('pursue')) {
-      return {
-        text: "Excellent question! Career planning is crucial for your future. I recommend:\n\n1. Take our Career Path Quiz - it analyzes your interests, strengths, and goals\n2. Explore career options in: Engineering, Medical, Arts, Commerce, Science\n3. Learn about job prospects and salary ranges\n\nWould you like to start with the Career Quiz?",
-        suggestions: ["Start Career Quiz", "Engineering careers", "Medical careers"]
-      };
-    } else if (lowerMsg.includes('admission') || lowerMsg.includes('apply') || lowerMsg.includes('process')) {
-      return {
-        text: "The admission process typically involves:\n\n1. **Entrance Exams** - JEE Main/Advanced, NEET, etc.\n2. **Application** - Online forms with documents\n3. **Counseling** - Seat allocation based on rank\n4. **Document Verification** - Original certificates\n5. **Fee Payment** - Secure your seat\n\nEach college may have specific requirements. Which exam are you preparing for?",
-        suggestions: ["JEE admission process", "NEET counseling", "Required documents"]
-      };
-    } else if (lowerMsg.includes('scholarship') || lowerMsg.includes('financial') || lowerMsg.includes('aid')) {
-      return {
-        text: "There are many scholarship opportunities available!\n\n**Merit-Based:**\n• National Scholarships\n• College-specific scholarships\n• Top ranker awards\n\n**Need-Based:**\n• Government schemes\n• Fee waivers\n• Education loans with subsidies\n\nI can help you find scholarships matching your profile. What's your category and family income range?",
-        suggestions: ["Government scholarships", "Private scholarships", "Education loans"]
-      };
-    } else if (lowerMsg.includes('compare') || lowerMsg.includes('difference') || lowerMsg.includes('vs')) {
-      return {
-        text: "I can help you compare colleges! I'll analyze:\n\n• **Placement Records** - Average package, top recruiters\n• **Infrastructure** - Labs, library, hostel\n• **Faculty** - Qualifications and experience\n• **Rankings** - NIRF, other rankings\n• **Fee Structure** - Total cost comparison\n\nWhich colleges would you like to compare?",
-        suggestions: ["Compare IITs", "Compare NITs", "Private vs Government"]
-      };
-    } else if (lowerMsg.includes('hello') || lowerMsg.includes('hi') || lowerMsg.includes('hey')) {
-      return {
-        text: "Hello! 👋 Welcome to CampusIQ! I'm your AI assistant, here to make your college journey easier.\n\nI can help you with:\n✓ Finding the right college\n✓ Career guidance\n✓ Admission procedures\n✓ Scholarship information\n✓ Course comparisons\n\nWhat would you like to explore first?",
-        suggestions: ["Find colleges", "Career advice", "Admission help"]
-      };
-    } else if (lowerMsg.includes('quiz')) {
-      return {
-        text: "Our Career Path Quiz is a comprehensive assessment that helps you discover your ideal career field!\n\n**What it covers:**\n• Your interests and passions\n• Work environment preferences\n• Motivation factors\n• Subject strengths\n• Career goals\n\n**Takes only 5 minutes** and provides personalized recommendations!\n\nReady to discover your perfect career path?",
-        suggestions: ["Start Quiz Now", "Learn more about quiz", "Skip for now"]
-      };
-    } else {
-      return {
-        text: `I understand you're asking about "${message}". I'm here to help! \n\nI can provide detailed information about:\n• College selection and recommendations\n• Career paths and opportunities\n• Admission procedures\n• Scholarships and financial aid\n• Course comparisons\n\nCould you be more specific about what you'd like to know?`,
-        suggestions: ["Find colleges", "Career guidance", "Admission process"]
-      };
-    }
-  };
-
+  
   const handleSuggestionClick = (query) => {
     setInputValue(query);
     handleQuickReply(query);

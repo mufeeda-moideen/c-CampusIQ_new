@@ -1,5 +1,10 @@
-import React, { useState } from 'react';
-import { Download, Star, MapPin, Award, DollarSign, Home, BookOpen, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, Shield, Zap, Target, Lightbulb, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import {
+  Download, Star, MapPin, Award, DollarSign, Home, BookOpen,
+  TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight,
+  Shield, Zap, Target, Lightbulb, Heart
+} from "lucide-react";
+
 import { useNavigate } from "react-router-dom";
 
 // Helper function to calculate fit score
@@ -103,7 +108,40 @@ export default function Recommendations({ recommendations = [], handlePDF = () =
   const navigate = useNavigate();
   const [compareList, setCompareList] = useState([]);
   const [showCompare, setShowCompare] = useState(false);
+  const [savedColleges, setSavedColleges] = useState([]);
+  const savedIds = savedColleges.map(c => c.id);
 
+
+
+  useEffect(() => {
+  fetchSavedColleges();
+}, []);
+
+const fetchSavedColleges = async () => {
+  try {
+    const res = await fetch("http://localhost:8080/api/user/saved-colleges", {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+
+    const data = await res.json();
+
+    // normalize id for frontend usage
+    const normalized = data.map(c => ({
+      ...c,
+      id: c.collegeId ?? c.id, // always have an 'id' field
+    }));
+
+    setSavedColleges(normalized);
+  } catch (err) {
+    console.error("Failed to fetch saved colleges", err);
+  }
+};
+
+
+
+  
   // Enrich recommendations with calculated data
   const enrichedRecs = recommendations.map((rec, index) => ({
     ...rec,
@@ -126,6 +164,38 @@ export default function Recommendations({ recommendations = [], handlePDF = () =
       setCompareList([...compareList, rec]);
     }
   };
+  const toggleSaveCollege = async (college) => {
+  try {
+    const alreadySaved = savedColleges.find(c => c.id === college.id);
+
+    if (alreadySaved) {
+      // ❌ UNSAVE
+      await fetch(`http://localhost:8080/api/user/saved-colleges/${college.id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      setSavedColleges(savedColleges.filter(c => c.id !== college.id));
+    } else {
+      // ❤️ SAVE
+      await fetch("http://localhost:8080/api/user/saved-colleges", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ collegeId: college.id }),
+      });
+
+      setSavedColleges([...savedColleges, college]);
+    }
+  } catch (err) {
+    console.error("Failed to toggle saved college");
+  }
+};
+
 
   return (
     <div id="recommendation-section" className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 py-8 px-4">
@@ -299,7 +369,9 @@ export default function Recommendations({ recommendations = [], handlePDF = () =
                     <MapPin className="w-4 h-4 text-indigo-500" />
                     <div>
                       <p className="text-xs text-gray-500">Location</p>
-                      <p className="text-sm font-medium text-gray-900">{rec.location}</p>
+                      <p className="text-sm font-medium text-gray-900 truncate max-w-[180px]">
+  {rec.location?.split(',')[0]}
+</p>
                       <p className="text-xs text-gray-500">{rec.distance_km} km away</p>
                     </div>
                   </div>
@@ -366,6 +438,24 @@ export default function Recommendations({ recommendations = [], handlePDF = () =
                   </div>
                   
                   <div className="flex gap-2">
+  {/* ❤️ Save College */}
+  <button
+    onClick={() => toggleSaveCollege(rec)}
+    className={`p-2 rounded-lg border transition-all
+      ${
+        savedIds.includes(rec.id)
+          ? "bg-pink-100 border-pink-300 text-pink-600"
+          : "bg-gray-50 border-gray-200 text-gray-500 hover:bg-pink-50"
+      }`}
+    title="Save College"
+  >
+    <Heart
+      className="w-5 h-5"
+      fill={savedColleges.find(c => c.id === rec.id) ? "currentColor" : "none"}
+    />
+  </button>
+
+  {/* Compare */}
   <button
     onClick={() => toggleCompare(rec)}
     className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all
@@ -378,6 +468,7 @@ export default function Recommendations({ recommendations = [], handlePDF = () =
     {compareList.find(c => c.id === rec.id) ? "Remove" : "Compare"}
   </button>
 
+  {/* View Details */}
   <button
     onClick={() => navigate(`/college/${rec.id}`)}
     className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg text-sm font-medium hover:from-indigo-700 hover:to-purple-700 transition-all"
@@ -385,6 +476,7 @@ export default function Recommendations({ recommendations = [], handlePDF = () =
     View Details
   </button>
 </div>
+
 
                 </div>
               </div>

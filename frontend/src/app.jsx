@@ -29,7 +29,7 @@ import CompleteProfile from "./components/CompleteProfile.jsx";
 // Admin Pages
 import AdminColleges from "./components/admin_colleges";
 import AdminCareerGuidance from "./components/admin_careerguidance.jsx";
-import DashboardAdmin from "./components/admin-overview.jsx";
+import UsersPage from "./components/admin-users.jsx";
 
 // --- APP WRAPPER ---
 export default function App() {
@@ -121,11 +121,17 @@ function MainApp() {
       if (!res.ok) return alert("Login failed");
 
       setToken(data.token);
-setUser(data.user); // ✅ real backend user
+
+const loggedUser = {
+  ...(data.user || data.admin),
+  role: form.role
+};
+
+setUser(loggedUser);
 
 localStorage.setItem("token", data.token);
-localStorage.setItem("user", JSON.stringify(data.user)); // ✅ REQUIRED
-localStorage.setItem("role", form.role);
+localStorage.setItem("user", JSON.stringify(loggedUser));
+console.log("LOGIN RESPONSE:", data);
 
 
     } catch {
@@ -374,8 +380,6 @@ const handlePDF = () => {
       {user?.role === "admin" && (
   <AdminLayout handleLogout={handleLogout}>
     <Routes>
-      {/* ✅ Overview */}
-      <Route path="/admin" element={<DashboardAdmin />} />
 
       {/* ✅ Colleges Admin */}
       <Route
@@ -389,13 +393,23 @@ const handlePDF = () => {
           />
         }
       />
+      {/* ✅ Career Guidance Admin */}
+      <Route
+        path="/admin/career-guidance"
+        element={
+          <AdminCareerGuidance
+            colleges={colleges}  
+            setColleges={setColleges}
+          />
+        }
+      />
 
-      {/* ✅ Future Admin Pages (ready) */}
-      <Route path="/admin/users" element={<div>Users Management</div>} />
-      <Route path="/admin/predictions" element={<div>Predictions</div>} />
-      <Route path="/admin/reports" element={<div>Reports</div>} />
-      <Route path="/admin/career-guidance" element={<AdminCareerGuidance />} />
-      
+      <Route
+  path="/admin/users"
+  element={
+      <UsersPage />
+  }
+/>
 
     </Routes>
   </AdminLayout>

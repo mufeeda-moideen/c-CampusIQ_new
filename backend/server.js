@@ -34,8 +34,6 @@ app.use("/api/resources", resourceRoutes);
 const userCareerRoutes = require("./routes/userCareerRoutes");
 app.use("/api/user-career", userCareerRoutes);
 
-const chatbotRoutes = require("./routes/chatbotRoute");
-app.use("/api/chat", chatbotRoutes);
 
 const collegeRoutes = require('./routes/collegeDetails');
 app.use('/api/colleges', collegeRoutes);
@@ -49,7 +47,8 @@ app.use("/api/user", completeProfileRoutes);
 const profileRoutes = require("./routes/profileRoutes");
 app.use("/api/user", profileRoutes);
 
-
+const chatRoutes = require("./routes/chatRoutes");
+app.use("/api", chatRoutes);
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {

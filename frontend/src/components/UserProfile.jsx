@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import SavedCollegesCard from "../components/SavedCollegesCard";
+import { useNavigate } from "react-router-dom";
 
 import { User, Mail, Phone, MapPin, Calendar, Award, Edit2, Camera, Save, CheckCircle, Clock, Heart, Settings, Trophy } from 'lucide-react';
 
 export default function UserProfile() {
+  const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
 
   const [profile, setProfile] = useState({
@@ -16,8 +19,12 @@ export default function UserProfile() {
   profileImage: '👩‍🎓'
 });
 
+const [savedColleges, setSavedColleges] = useState([]);
+
+
 useEffect(() => {
   fetchProfile();
+  fetchSavedColleges();
 }, []);
 
 const fetchProfile = async () => {
@@ -45,6 +52,24 @@ const fetchProfile = async () => {
     console.error('Failed to load profile');
   }
 };
+
+const fetchSavedColleges = async () => {
+  try {
+    const res = await axios.get(
+      "http://localhost:8080/api/user/saved-colleges",
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+
+    setSavedColleges(res.data); // ✅ backend is source of truth
+  } catch (err) {
+    console.error("Failed to fetch saved colleges");
+  }
+};
+
 
 const handleSave = async () => {
   if (!isEditing) {
@@ -80,26 +105,7 @@ const handleSave = async () => {
     console.error('Failed to update profile');
   }
 };
-
-
-
-  const savedColleges = [
-    {
-      name: 'Govt Engineering College, Thrissur',
-      course: 'Computer Science',
-      savedDate: '2 days ago'
-    },
-    {
-      name: 'College of Engineering Trivandrum',
-      course: 'Computer Science',
-      savedDate: '5 days ago'
-    },
-    {
-      name: 'Model Engineering College',
-      course: 'Computer Science',
-      savedDate: '1 week ago'
-    }
-  ];
+  
 
   const recentActivity = [
     { action: 'Got recommendations', detail: 'Based on KEAM rank', time: '2 hours ago', icon: Award },
@@ -155,8 +161,11 @@ const handleSave = async () => {
                 {/* Quick Stats */}
                 <div className="grid grid-cols-2 gap-3 mb-6">
                   <div className="text-center p-3 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border border-blue-200">
-                    <div className="text-2xl font-bold text-blue-600">3</div>
-                    <div className="text-xs text-gray-600">Saved Colleges</div>
+                    <div className="text-2xl font-bold text-blue-600">
+  {savedColleges.length}
+</div>
+<div className="text-xs text-gray-600">Saved Colleges</div>
+
                   </div>
                   <div className="text-center p-3 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl border border-purple-200">
                     <div className="text-2xl font-bold text-purple-600">3</div>
@@ -294,31 +303,11 @@ const handleSave = async () => {
           {/* Right Content Area */}
           <div className="lg:col-span-2 space-y-6">
             {/* Saved Colleges */}
-            <div className="bg-white rounded-2xl shadow-xl p-6 border-2 border-indigo-100">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Heart className="w-5 h-5 text-indigo-600" />
-                  <h3 className="font-bold text-gray-800">Saved Colleges</h3>
-                </div>
-                <span className="text-sm text-gray-600">{savedColleges.length} colleges</span>
-              </div>
-              <div className="space-y-3">
-                {savedColleges.map((college, idx) => (
-                  <div key={idx} className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border-2 border-blue-200 hover:shadow-lg transition-all">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="font-bold text-gray-800 mb-1">{college.name}</div>
-                        <div className="text-sm text-gray-600 mb-2">{college.course}</div>
-                        <div className="text-xs text-gray-500">Saved {college.savedDate}</div>
-                      </div>
-                      <button className="px-3 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all">
-                        View
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <SavedCollegesCard
+  colleges={savedColleges}
+  onView={(college) => navigate(`/college/${college.id}`)}
+/>
+
 
             {/* Recent Activity */}
             <div className="bg-white rounded-2xl shadow-xl p-6 border-2 border-indigo-100">

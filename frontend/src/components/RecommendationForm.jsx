@@ -1,5 +1,8 @@
 import React from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
+
 
 export default function RecommendationForm({
   rankForm = {},
@@ -9,10 +12,35 @@ export default function RecommendationForm({
 }) {
   const navigate = useNavigate();
 
-  const navigateToRecommendations = () => {
-    handleRecommend();  // Optional: call your logic first
-    navigate("/recommendations"); // Navigate to next page
+  const navigateToRecommendations = async () => {
+  if (!rankForm.rank || !rankForm.examType) {
+    return alert("Please fill in required fields");
+  }
+
+  let userLat = null;
+  let userLng = null;
+
+  // If user typed location
+  if (rankForm.location) {
+    const coords = await getCoordinatesFromCity(rankForm.location);
+
+    if (!coords) return;
+
+    userLat = coords.lat;
+    userLng = coords.lng;
+  }
+
+  // Create updated form object
+  const updatedForm = {
+    ...rankForm,
+    userLat,
+    userLng,
+    preferredDistance: Number(rankForm.preferredDistance)
   };
+
+  handleRecommend(updatedForm); // send updated data
+  navigate("/recommendations");
+};
 
   // Fetch recommendations from backend
 const fetchRecommendations = async () => {
@@ -32,6 +60,34 @@ const fetchRecommendations = async () => {
   } catch (err) {
     console.error(err);
     alert("Failed to fetch recommendations. Try again.");
+  }
+};
+//location access
+const getCoordinatesFromCity = async (city) => {
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${city}&limit=1`,
+      {
+        headers: {
+          "User-Agent": "campusiq-app"
+        }
+      }
+    );
+
+    const data = await response.json();
+
+    if (!data.length) {
+      alert("Location not found");
+      return null;
+    }
+
+    return {
+      lat: parseFloat(data[0].lat),
+      lng: parseFloat(data[0].lon),
+    };
+  } catch (error) {
+    console.error("Geocoding error:", error);
+    return null;
   }
 };
 
@@ -199,7 +255,7 @@ const fetchRecommendations = async () => {
                 <option value="deemed">Deemed</option>
               </select>
             </div>
-            {/* User Location */}
+            {/* User Location 
           <div className="group">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Your Location
@@ -211,9 +267,9 @@ const fetchRecommendations = async () => {
               onChange={(e) => setRankForm({ ...rankForm, userLocation: e.target.value })}
               className="w-full px-5 py-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-white hover:border-indigo-300 placeholder:text-gray-400"
             />
-          </div>
+          </div>*/}
 
-          {/* Preferred Distance */}
+          {/* Preferred Distance 
           <div className="group">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Preferred Distance (km)
@@ -225,7 +281,7 @@ const fetchRecommendations = async () => {
               onChange={(e) => setRankForm({ ...rankForm, preferredDistance: e.target.value })}
               className="w-full px-5 py-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-white hover:border-indigo-300 placeholder:text-gray-400"
             />
-          </div>
+          </div>*/}
 
           </div>
 
