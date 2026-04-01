@@ -24,7 +24,7 @@ export default function CollegeDetailsPage() {
         if (!res.ok) throw new Error('College not found');
         return res.json();
       })
-      .then(data => setCollege(data))
+      .then(data => setCollege({ ...data, fit_score: location.state?.fit_score || data.fit_score }))
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
   }, [id]);

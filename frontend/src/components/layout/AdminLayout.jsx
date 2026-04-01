@@ -20,7 +20,7 @@ export default function AdminLayout({ children, handleLogout }) {
   const menuItems = [
     { label: "Colleges", icon: Building2, path: "/admin/colleges" },
     { label: "Career Guidance", icon: Video, path: "/admin/career-guidance" },
-    { label: "Users", icon: Users, path: "/admin/users" },
+    //{ label: "Users", icon: Users, path: "/admin/users" },
   ];
 
   return (

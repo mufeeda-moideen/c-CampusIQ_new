@@ -29,7 +29,7 @@ const getCollegeById = async (req, res) => {
       campus_type: c.campus_type,
       distance_km: c.distance_km || 25,
 
-      fit_score: Math.round(c.ai_fit_score || 85),
+      fit_score: c.ai_fit_score && c.ai_fit_score !== '0.00' ? Math.round(c.ai_fit_score) : 85,
 
       review_score: 4.4,
       review_count: 1500,

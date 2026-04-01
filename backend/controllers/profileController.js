@@ -40,7 +40,6 @@ exports.updateProfile = async (req, res) => {
 };
 
 // GET saved colleges
-// GET saved colleges
 exports.getSavedColleges = async (req, res) => {
   try {
     if (!req.user || !req.user.id) {
@@ -54,7 +53,7 @@ exports.getSavedColleges = async (req, res) => {
         c.courses,
         sc.created_at AS saved_date
       FROM saved_colleges sc
-      JOIN colleges c ON sc.college_id = c.id
+      JOIN college c ON sc.college_id = c.id
       WHERE sc.user_id = $1
       ORDER BY sc.created_at DESC
     `, [req.user.id]);

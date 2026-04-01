@@ -134,16 +134,33 @@ export default function ChatbotInterface() {
 
     const data = await res.json();
 
+    // Simulate streaming effect for better UX
+    const words = data.reply.split(' ');
+    let currentText = '';
+    
     setMessages(prev => [
       ...prev,
       {
         id: prev.length + 1,
-        text: data.reply,
+        text: '',
         sender: "bot",
         timestamp: new Date(),
-        source: data.source // optional (rule / cache / llm)
+        source: data.source
       }
     ]);
+
+    for (let i = 0; i < words.length; i++) {
+      currentText += words[i] + ' ';
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.id === prev.length 
+            ? { ...msg, text: currentText.trim() }
+            : msg
+        )
+      );
+      await new Promise(resolve => setTimeout(resolve, 50)); // Fast typing effect
+    }
+
   } catch (err) {
     setMessages(prev => [
       ...prev,

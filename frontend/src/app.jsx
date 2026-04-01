@@ -29,7 +29,7 @@ import CompleteProfile from "./components/CompleteProfile.jsx";
 // Admin Pages
 import AdminColleges from "./components/admin_colleges";
 import AdminCareerGuidance from "./components/admin_careerguidance.jsx";
-import UsersPage from "./components/admin-users.jsx";
+//import UsersPage from "./components/admin-users.jsx";
 
 // --- APP WRAPPER ---
 export default function App() {
@@ -334,7 +334,7 @@ const handlePDF = () => {
         <UserLayout handleLogout={handleLogout}>
   <Routes>
     <Route
-  path="/"
+  path="*"
   element={
     user?.is_profile_complete ? (
       <Dashboard colleges={colleges} />
@@ -383,7 +383,7 @@ const handlePDF = () => {
 
       {/* ✅ Colleges Admin */}
       <Route
-        path="/admin/colleges"
+        path="*"
         element={
           <AdminColleges
             colleges={colleges}
@@ -404,12 +404,13 @@ const handlePDF = () => {
         }
       />
 
+      {/* ✅ Users Admin 
       <Route
-  path="/admin/users"
-  element={
-      <UsersPage />
-  }
-/>
+        path="/admin/users"
+        element={
+          <UsersPage />
+        }
+      />*/}
 
     </Routes>
   </AdminLayout>

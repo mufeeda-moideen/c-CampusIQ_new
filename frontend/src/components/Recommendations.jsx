@@ -470,7 +470,7 @@ const fetchSavedColleges = async () => {
 
   {/* View Details */}
   <button
-    onClick={() => navigate(`/college/${rec.id}`)}
+    onClick={() => navigate(`/college/${rec.id}`, { state: { fit_score: rec.fit_score } })}
     className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg text-sm font-medium hover:from-indigo-700 hover:to-purple-700 transition-all"
   >
     View Details

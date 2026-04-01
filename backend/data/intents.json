@@ -1,18 +1,1 @@
-[
-  {
-    "keywords": ["college", "university", "find"],
-    "response": "Tell me your entrance rank, preferred location, course, and budget."
-  },
-  {
-    "keywords": ["career", "job"],
-    "response": "I can help with career guidance. Would you like to take a career quiz?"
-  },
-  {
-    "keywords": ["admission", "apply"],
-    "response": "Admissions involve entrance exams, counseling, document verification, and fee payment."
-  },
-  {
-    "keywords": ["scholarship"],
-    "response": "There are merit-based and need-based scholarships. Tell me your category."
-  }
-]
+[]
